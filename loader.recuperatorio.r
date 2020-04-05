@@ -12,7 +12,7 @@ get.os <- function()
 }
 
 
-get.operating.dir() <- function()
+get.operating.dir <- function()
 {
   if(get.os() == 'Windows')
   {
