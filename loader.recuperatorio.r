@@ -16,7 +16,7 @@ get.operating.dir <- function()
 {
   if(get.os() == 'Windows')
   {
-    return('C:/Users/Luxor/Documents/DM Finanzas/Subotovsky.recuperatorio')
+    return('C:/Users/Luxor/Documents/DM Finanzas')
   }
   else
   {
@@ -133,7 +133,7 @@ prepare.predict.matrix.default <- function(df)
 
 init.wd <- function()
 {
-  setwd("C:/Users/Luxor/Documents/DM Finanzas")
+  setwd(get.operating.dir())
 }
 
 
