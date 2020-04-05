@@ -2,6 +2,12 @@ library(fst)
 library(tidyverse)
 library(gsubfn)
 library(data.table)
+library(glue)
+
+
+#### Check environment stuff here:
+# http://adv-r.had.co.nz/Environments.html
+
 
 
 ###### Differentiation ######
@@ -12,18 +18,34 @@ get.os <- function()
 }
 
 
-get.operating.dir <- function()
+get.env <- function()
 {
-  if(get.os() == 'Windows')
-  {
-    return('C:/Users/Luxor/Documents/DM Finanzas')
-  }
-  else
-  {
-    return('~/cloud/cloud1/recuperatorio')
-  }
+  # windows environment
+  if(get.os() == 'Windows') return(list(
+    code_dir='C:/Users/Luxor/Documents/GitHub/Test_01/dm_finanzas',
+    data_dir='C:/Users/Luxor/Documents/DM Finanzas/data.recuperatorio'
+    ))
   
+  # linux environment
+  else return(list(
+    code_dir='~/dm_finanzas',
+    data_dir='~/cloud/cloud1'
+  ))
 }
+
+
+get.data.dir <- function( ... )
+{
+  return( file.path( get.env()$data_dir, ...  ) )
+}
+
+
+get.code.dir <- function( ... )
+{
+  return( file.path( get.env()$code_dir, ...  ) )
+}
+
+
 
 
 ################## metrics ################
@@ -129,14 +151,6 @@ prepare.predict.matrix.default <- function(df)
 }
 
 
-############# Setup stuff ####################
-
-init.wd <- function()
-{
-  setwd(get.operating.dir())
-}
-
-
 
 ########### Loading and saving ###################
 
@@ -148,16 +162,6 @@ fst.read <- function(path)
 fst.write <- function(df, path)
 {
   return( fst::write.fst(df, path, compress=100 ) )
-}
-
-get.full.ds <- function()
-{
-  return( fst.read("C:/Users/Luxor/Documents/DM Finanzas/datasetsOri/paquete_premium.rds") )
-}
-
-get.hist.ds <- function()
-{
-  return( fst.read("C:/Users/Luxor/Documents/DM Finanzas/datasetsOri/paquete_premium_hist.rds") )
 }
 
 
@@ -183,7 +187,14 @@ summary.group <- function( df, ... )
 
 ############### Logging ################
 
-log.debug <- function(msg)
+log.debug <- function(msg, env=NULL)
 {
-  print(paste(Sys.time(), glue(msg), sep=' : '))
+  if (!is.null(env))
+  {
+    print(paste(Sys.time(), glue_data(env, msg), sep=' : '))
+  }
+  else
+  {
+    print(paste(Sys.time(), glue(msg), sep=' : '))
+  }
 }
