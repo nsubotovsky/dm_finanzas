@@ -4,6 +4,27 @@ library(gsubfn)
 library(data.table)
 
 
+###### Differentiation ######
+
+get.os <- function()
+{
+  return(Sys.info()['sysname'])
+}
+
+
+get.operating.dir()
+{
+  if(get.os() == 'Windows')
+  {
+    return('C:/Users/Luxor/Documents/DM Finanzas/Subotovsky.recuperatorio')
+  }
+  else
+  {
+    return('~/cloud/cloud1/recuperatorio')
+  }
+  
+}
+
 
 ################## metrics ################
 
