@@ -165,6 +165,19 @@ fst.write <- function(df, path)
 }
 
 
+get.train.df <- function()
+{
+  dfpath <- get.data.dir('recuperatorio', 'subotovsky_generacion.rds')
+  return( fst.read(dfpath) )
+}
+
+
+get.predict.df <- function()
+{
+  dfpath <- get.data.dir('recuperatorio', 'subotovsky_aplicacion.rds')
+  return( fst.read(dfpath) )
+}
+
 
 ############ (sub)Sampling ###########################
 

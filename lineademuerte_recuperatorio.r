@@ -20,8 +20,8 @@ run.this<- function()
   
   
   globalenv()$log.debug('loading datasets...')
-  dataset_generacion   <-   fread( paste0( alumno_apellido, "_generacion.txt") )
-  dataset_aplicacion   <-   fread( paste0( alumno_apellido, "_aplicacion.txt") )
+  dataset_generacion   <-   globalenv()$get.train.df()
+  dataset_aplicacion   <-   globalenv()$get.predict.df()
   
   #dejo la clase en 0,1
   dataset_generacion[  , clase01 := as.integer(clase=="SI") ]
