@@ -1,8 +1,8 @@
-library(fst)
-library(tidyverse)
-library(gsubfn)
-library(data.table)
-library(glue)
+library(fst, warn.conflicts = FALSE, quietly=TRUE)
+library(tidyverse, warn.conflicts = FALSE, quietly=TRUE)
+library(gsubfn, warn.conflicts = FALSE, quietly=TRUE)
+library(data.table, warn.conflicts = FALSE, quietly=TRUE)
+library(glue, warn.conflicts = FALSE, quietly=TRUE)
 
 
 #### Check environment stuff here:
@@ -156,11 +156,15 @@ prepare.predict.matrix.default <- function(df)
 
 fst.read <- function(path)
 {
+  wd<-getwd()
+  log.debug('reading df {path}  -- [{wd}]', environment() )
   return( fst::read.fst(path, as.data.table=T) )
 }
 
 fst.write <- function(df, path)
 {
+  wd<-getwd()
+  log.debug('writing to df {path}  -- [{wd}]', environment())
   return( fst::write.fst(df, path, compress=100 ) )
 }
 

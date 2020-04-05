@@ -27,7 +27,6 @@ run.this<- function()
   for (filename in filenames)
   {
     globalenv()$log.debug('processing {filename}', environment())
-    
     dataset <- fread(filename)
     dataset %>% globalenv()$fst.write( filename %>% str_replace('.txt', '.rds') )
   }

@@ -8,19 +8,12 @@ start.modules <- c("~/dm_finanzas/loader.recuperatorio.r", # linux location
 )
 
 
+# Load existing modules only
 load.modules <- function( modulesPath )
 {
   for( modulePath in modulesPath)
-  {
-    tryCatch({
-      print(paste0('Attempting to load ', modulePath))
+    if (file.exists(modulePath))
       source(modulePath)
-      print('Success')
-    },
-    warning=function(...){print('Module not found')},
-    error=function(...){print('Module not found')}
-    )
-  }
 }
 
 ## load helper libs ##
