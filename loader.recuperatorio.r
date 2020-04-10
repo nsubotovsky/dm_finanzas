@@ -3,6 +3,7 @@ library(tidyverse, warn.conflicts = FALSE, quietly=TRUE)
 library(gsubfn, warn.conflicts = FALSE, quietly=TRUE)
 library(data.table, warn.conflicts = FALSE, quietly=TRUE)
 library(glue, warn.conflicts = FALSE, quietly=TRUE)
+library(zeallot, warn.conflicts = FALSE, quietly=TRUE)
 
 
 #### Check environment stuff here:
@@ -191,6 +192,15 @@ sample.df <- function( df, fraction, ..., replace=F )
     group_var <- enquos(...)
     return( df %>% group_by( !!!group_var ) %>% sample_frac( fraction, replace=replace ) %>% ungroup() %>% as.data.table() )
 }
+
+
+split.train.test.df <- function( df, fraction, ... )
+{
+  train <- df %>% sample.df( fraction, ... )
+  test <- df %>% anti_join(train, by='id_cliente')
+  return (list(train=train, test=test))
+}
+
 
 summary.group <- function( df, ... )
 {
