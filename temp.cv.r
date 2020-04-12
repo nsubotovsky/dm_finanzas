@@ -64,7 +64,7 @@ globalenv()$log.debug('training...')
 
 testFunc <- function(preds, dtrain)
 {
-    cut<-0.009
+    cut<-0.025
     total.rows<-nrow(dtrain)
     
     score.df <- data.table(pred=preds,
