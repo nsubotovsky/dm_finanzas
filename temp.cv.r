@@ -64,21 +64,14 @@ globalenv()$log.debug('training...')
 
 testFunc <- function(preds, dtrain)
 {
-    cut<-0.025
-    total.rows<-nrow(dtrain)
-    
-    score.df <- data.table(pred=preds,
-                           actual=dtrain %>% getinfo('label')) %>%
-        filter( pred >= cut ) %>%
-        mutate( points=if_else(actual==1, 19500, -500) )
-    
-    points <- sum( score.df$points ) / total.rows
-    
-    return( list(metrics='suboMetrics', value=points ))
+    return( list(
+        metrics='suboMetrics',
+        value=globalenv()$score.prediction(preds, dtrain %>% getinfo('label')) ))
 }
 
 train.matrix <- train.df %>% as.xgbMatrix()
 validate.matrix <- validate.df %>% as.xgbMatrix()
+
 
 aa <- xgb.cv(data=train.matrix,
              nfold=5,
@@ -87,7 +80,7 @@ aa <- xgb.cv(data=train.matrix,
              max_bin= 31,
              base_score=train.matrix %>% getinfo("label") %>% mean(),
              eta= 0.04,
-             nrounds= 500, 
+             nrounds= 300, 
              colsample_bytree= 0.6,
              stratified=TRUE,
              maximize = TRUE,

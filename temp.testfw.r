@@ -86,7 +86,7 @@ modelo_400 = xgb.train(
     max_bin= 31,
     base_score= mean( getinfo(train.df.xgbmatrix, "label") ),
     eta= 0.04,
-    nrounds= 250, 
+    nrounds= 350, 
     colsample_bytree= 0.6
 )
 
@@ -100,19 +100,10 @@ prediction_300 <- modelo_300 %>% predict( data.matrix( aa %>% select( -clase01, 
 prediction_400 <- modelo_400 %>% predict( data.matrix( aa %>% select( -clase01, -id_cliente ) ) )
 
 
-score.df <- function( probabilities, actual, cutoff=0.025, relative=TRUE )
-{
-    normalization <- ifelse( relative==TRUE, length(actual), 1 )
-    score.df <- data.table( prob=probabilities, target=actual ) %>%
-        filter( prob>=cutoff ) %>%
-        mutate( points=if_else( target==1, 19500, -500) )
-    
-    score <- sum( score.df$points ) / normalization
-    return(score)
-}
 
-score.df( prediction_300, aa$clase01 )
 
-score.df( prediction_400, aa$clase01 )
+score.prediction( prediction_300, aa$clase01 )
+
+score.prediction( prediction_400, aa$clase01 )
 
 
