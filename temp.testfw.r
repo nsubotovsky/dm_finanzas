@@ -37,30 +37,9 @@ full.df <- globalenv()$get.train.df()
 c(train.df, test.df) %<-% ( full.df %>% split.train.test.df(0.7, clase) )
 
 
-prepare.class.df <- function(df)
-{
-    globalenv()$log.debug('preparing dataframe...')
-    return( df %>%
-                mutate( clase01=if_else(clase=="SI", 1, 0) ) %>%
-                select(-clase) )
-    
-}
 
 
-as.xgbMatrix <- function(df)
-{
-    df.output.as.01 <- df %>% prepare.class.df()
-    globalenv()$log.debug('converting to xgbMatrix...')
-    xgb.matrix.df <- xgb.DMatrix(
-        data  = data.matrix( df.output.as.01 %>% select( -id_cliente, -clase01 ) ),
-        label = df.output.as.01$clase01
-    )
-    return(xgb.matrix.df)
-}
-
-
-
-train.df.xgbmatrix <- train.df %>% as.xgbMatrix()
+train.df.xgbmatrix <- train.df %>% globalenv()$as.xgbMatrix()
 
 
 set.seed( 102191 )
@@ -92,7 +71,7 @@ modelo_400 = xgb.train(
 
 
 
-aa <- test.df %>% prepare.class.df()
+aa <- test.df %>% globalenv()$prepare.class.df()
 
 
 prediction_300 <- modelo_300 %>% predict( data.matrix( aa %>% select( -clase01, -id_cliente ) ) )

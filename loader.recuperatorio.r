@@ -150,20 +150,28 @@ score.prediction <- function( pred.probs, actual, cutoff=0.025, relative=TRUE )
 ################ Prepare training df - xgb specific #################
 
 
-prepare.training.matrix.default <- function(df, target.func=target.func.baja2)
+
+prepare.class.df <- function(df)
 {
-    list[ df.train, df.target ] <- split.prepare.target(df,target.func)
-    xgb.train.matrix <- xgb.DMatrix( data = data.matrix( df.train ), label = df.target )
-    return(xgb.train.matrix)
+  log.debug('preparing dataframe...')
+  return( df %>%
+            mutate( clase01=if_else(clase=="SI", 1, 0) ) %>%
+            select(-clase) )
 }
 
 
-prepare.predict.matrix.default <- function(df)
+as.xgbMatrix <- function(df)
 {
-    list[df.train, df.target]  <- split.prepare.target(df)
-    xgb.predict.matrix <- xgb.DMatrix( data = data.matrix( df.train ) )
-    return(list(predict=xgb.predict.matrix, target=df.target))
+  df.output.as.01 <- df %>% prepare.class.df()
+  log.debug('converting to xgbMatrix...')
+  xgb.matrix.df <- xgb.DMatrix(
+    data  = data.matrix( df.output.as.01 %>% select( -id_cliente, -clase01 ) ),
+    label = df.output.as.01$clase01
+  )
+  return(xgb.matrix.df)
 }
+
+
 
 
 
