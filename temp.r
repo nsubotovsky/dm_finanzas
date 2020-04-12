@@ -1,4 +1,3 @@
-########### Boilerplate code to auto-load correct module ##############
 
 rm(list = ls())
 gc()
@@ -19,9 +18,5 @@ load.modules <- function( modulesPath )
 ## load helper libs ##
 load.modules(start.modules)
 
-## source code and run it ##
-#source( get.code.dir('lineademuerte_recuperatorio.r'))
-#source( get.code.dir('prepare_fastdfs.r'))
-source( get.code.dir('temp.r'))
-#run.this()
+### Type test code in here.
 
