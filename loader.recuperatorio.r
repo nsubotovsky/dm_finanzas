@@ -133,6 +133,20 @@ split.prepare.target <- function(df, target.func=target.func.baja2)
 }
 
 
+############# Scoring Daraframe ###############
+
+score.prediction <- function( pred.probs, actual, cutoff=0.025, relative=TRUE )
+{
+  normalization <- ifelse( relative==TRUE, length(actual), 1 )
+  score.df <- data.table( prob=pred.probs, target=actual ) %>%
+    filter( prob>=cutoff ) %>%
+    mutate( points=if_else( target==1, 19500, -500) )
+  
+  score <- sum( score.df$points ) / normalization
+  return(score)
+}
+
+
 ################ Prepare training df - xgb specific #################
 
 
