@@ -1,9 +1,11 @@
 library(fst, warn.conflicts = FALSE, quietly=TRUE)
 library(tidyverse, warn.conflicts = FALSE, quietly=TRUE)
+library(dplyr, warn.conflicts = FALSE, quietly=TRUE)
 library(gsubfn, warn.conflicts = FALSE, quietly=TRUE)
 library(data.table, warn.conflicts = FALSE, quietly=TRUE)
 library(glue, warn.conflicts = FALSE, quietly=TRUE)
 library(zeallot, warn.conflicts = FALSE, quietly=TRUE)
+library(xgboost, warn.conflicts = FALSE, quietly=TRUE )
 
 
 #### Check environment stuff here:
@@ -137,13 +139,13 @@ split.prepare.target <- function(df, target.func=target.func.baja2)
 
 score.prediction <- function( pred.probs, actual, cutoff=0.025, relative=TRUE )
 {
-  normalization <- ifelse( relative==TRUE, length(actual), 1 )
-  score.df <- data.table( prob=pred.probs, target=actual ) %>%
-    filter( prob>=cutoff ) %>%
-    mutate( points=if_else( target==1 | target=='SI', 19500, -500) )
-  
-  score <- sum( score.df$points ) / normalization
-  return(score)
+    normalization <- ifelse( relative==TRUE, length(actual), 1 )
+    score.df <- data.table( prob=pred.probs, target=actual ) %>%
+        filter( prob>=cutoff ) %>%
+        mutate( points=if_else( target==1 | target=='SI', 19500, -500) )
+    
+    score <- sum( score.df$points ) / normalization
+    return(score)
 }
 
 
@@ -153,24 +155,82 @@ score.prediction <- function( pred.probs, actual, cutoff=0.025, relative=TRUE )
 
 prepare.class.df <- function(df)
 {
-  log.debug('preparing dataframe...')
-  return( df %>%
-            mutate( clase01=if_else(clase=="SI", 1, 0) ) %>%
-            select(-clase) )
+    log.debug('preparing dataframe...')
+    return( df %>%
+        mutate( clase01=if_else(clase=="SI", 1, 0) ) %>%
+        select(-clase) )
 }
 
 
 as.xgbMatrix <- function(df)
 {
-  df.output.as.01 <- df %>% prepare.class.df()
-  log.debug('converting to xgbMatrix...')
-  xgb.matrix.df <- xgb.DMatrix(
-    data  = data.matrix( df.output.as.01 %>% select( -id_cliente, -clase01 ) ),
-    label = df.output.as.01$clase01
-  )
-  return(xgb.matrix.df)
+    df.output.as.01 <- df %>% prepare.class.df()
+    log.debug('converting to xgbMatrix...')
+    xgb.matrix.df <- xgb.DMatrix(
+        data  = data.matrix( df.output.as.01 %>% select( -id_cliente, -clase01 ) ),
+        label = df.output.as.01$clase01
+    )
+    return(xgb.matrix.df)
 }
 
+
+
+
+DfHolder <- setRefClass('DfHolder',
+    fields = c('df','mean'),
+    
+    methods=list(
+      
+        # initializer (load df, calculate)
+        initialize = function( init.df )
+        {
+            log.debug('initializing matrix...')
+          
+            # si no tiene clase01, la creamos a partir de clase
+            if (!('clase01' %in% (init.df %>% colnames())))
+                if ('clase' %in% (init.df %>% colnames()))
+                    init.df <- init.df %>% mutate(clase01=if_else(clase=="SI", 1, 0))
+            
+            log.debug('Removing class...')
+            
+            # sacamos 'clase' si lo tiene
+            init.df <- init.df %>% select( -matches('^clase$') )
+            
+            log.debug('Calculating mean...')
+            mean <<- init.df$clase01 %>% mean()
+            
+            df <<- init.df
+            log.debug('Init DF done.')
+        },
+        
+        # Make the df into an xgb trainable thing
+        as.xgb.train = function()
+        {
+            return( xgb.DMatrix(
+                data  = data.matrix( df %>% select( -id_cliente, -clase01 ) ),
+                label = df$clase01
+            ))
+        },
+        
+        # Make the df into an xgb predictable thing
+        as.xgb.predict = function()
+        {
+            return( xgb.DMatrix(data  = data.matrix( df %>% select( -id_cliente, -matches('^clase')))))
+        },        
+        
+        # Get the results of the df
+        as.results = function()
+        {
+            return( df$clase01 )
+        },
+        
+        # Get the results of the df
+        as.clients = function()
+        {
+            return( df$id_cliente )
+        }
+        
+))
 
 
 

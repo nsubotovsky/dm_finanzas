@@ -20,28 +20,24 @@ run.this<- function()
   
   
     globalenv()$log.debug('loading datasets...')
-    dataset_generacion   <-   globalenv()$get.train.df()
-    dataset_aplicacion   <-   globalenv()$get.predict.df()
+    
+    
+    
+    dataset_generacion   <-   globalenv()$DfHolder$new( init.df=globalenv()$get.train.df() )
+    dataset_aplicacion   <-   globalenv()$DfHolder$new( init.df=globalenv()$get.predict.df() )
   
-    #dejo la clase en 0,1
-    dataset_generacion[  , clase01 := as.integer(clase=="SI") ]
-  
-    globalenv()$log.debug('preparing training matrix...')
-    dgeneracion  <-   xgb.DMatrix( data  = data.matrix( dataset_generacion[ , !c("id_cliente","clase","clase01"), with=FALSE]),
-                                 label = dataset_generacion[ , clase01 ]
-    )
-  
+
     #llamo al XGBoost,  notar lo frugal de los hiperparametros
     set.seed( 102191 ) #mi querida random seed, para que las corridas sean reproducibles
   
   
     globalenv()$log.debug('training...')
     modelo = xgb.train( 
-        data= dgeneracion,
+        data= dataset_generacion$as.xgb.train(),
         objective= "binary:logistic",
         tree_method= "hist",
         max_bin= 31,
-        base_score= mean( getinfo(dgeneracion, "label") ),
+        base_score= dataset_generacion$mean,
         eta= 0.04,
         nrounds= 300, 
         colsample_bytree= 0.6
@@ -50,20 +46,14 @@ run.this<- function()
     
     globalenv()$log.debug('predicting...')
     
-    #aplico a los datos de aplicacion, que NO TIENE CLASE
-    daplicacion  <-   xgb.DMatrix( data  = data.matrix( dataset_aplicacion[ , !c("id_cliente"), with=FALSE]) )
-    
     
     #aplico el modelo a datos nuevos
-    aplicacion_prediccion  <- predict(  modelo, daplicacion )
+    aplicacion_prediccion  <- predict(  modelo, dataset_aplicacion$as.xgb.predict() )
     
     #uno las columnas de numero_de_cliente y la probabilidad recien calculada
-    prediccion_final  <-  cbind(  dataset_aplicacion[ ,c("id_cliente")], aplicacion_prediccion )
+    prediccion_final  <-  data.table(  id_cliente=dataset_aplicacion$as.clients(), prob_positivo=aplicacion_prediccion )
     
-    #le doy nombre a las columnas
-    colnames( prediccion_final )  <-  c( "id_cliente", "prob_positivo" )
-    
-    
+
     globalenv()$log.debug('outputting data...')
     
     #Genero las TRES salidas

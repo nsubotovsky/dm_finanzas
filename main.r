@@ -20,8 +20,8 @@ load.modules <- function( modulesPath )
 load.modules(start.modules)
 
 ## source code and run it ##
-#source( get.code.dir('lineademuerte_recuperatorio.r'))
+source( get.code.dir('lineademuerte_recuperatorio.r'))
 #source( get.code.dir('prepare_fastdfs.r'))
-source( get.code.dir('temp.r'))
-#run.this()
+#source( get.code.dir('temp.testfw.r'))
+run.this()
 
