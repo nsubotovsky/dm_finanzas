@@ -43,8 +43,11 @@ lrn = makeMBOLearner(ctrl, obj.fun)
 
 design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
 
-run = exampleRun(obj.fun, design = design, learner = lrn,
-                 control = ctrl, points.per.dim = 50, show.info = TRUE)
+
+run <- mbo(fun=obj.fun, design = design, control=ctrl)
+
+# run = exampleRun(obj.fun, design = design, learner = lrn,
+#                  control = ctrl, points.per.dim = 50, show.info = TRUE)
 
 print(run)
 
