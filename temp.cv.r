@@ -85,7 +85,9 @@ print( avgResults %>% ggplot(aes(x=iter) ) + #, color=who
 top5Values <- (avgResults %>% arrange(mean) %>% tail(5))
 
 bestIterationAvg <- top5Values$iter %>% mean()
+bestIterationGain <- top5Values$mean %>% mean()
 bestIterationSd <- top5Values$iter %>% sd()
+
 
 
 
