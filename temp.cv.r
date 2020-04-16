@@ -29,6 +29,7 @@ library( "xgboost" )
 
 
 datasets <- ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+
 train.df <- globalenv()$DfHolder$new(datasets$train)
 validate.df <- globalenv()$DfHolder$new(datasets$test)
 
@@ -47,6 +48,7 @@ testFunc <- function(preds, dtrain)
 }
 
 
+
 aa <- xgb.cv(data=train.df$as.xgb.train(),
              nfold=5,
              objective= "binary:logistic",
@@ -54,12 +56,27 @@ aa <- xgb.cv(data=train.df$as.xgb.train(),
              max_bin= 31,
              base_score=train.df$mean,
              eta= 0.04,
-             nrounds= 300, 
+             nrounds= 500, 
              colsample_bytree= 0.6,
              stratified=TRUE,
              maximize = TRUE,
              #eval_metric='auc',
-             
-             evals=list(pruebaA=validate.df$as.xgb.train()),
+             #evals=list(pruebaA=validate.df$as.xgb.train()),
              feval=testFunc
 )
+
+library(ggplot2)
+
+print ( ggplot( aa$evaluation_log, aes(x=iter) ) + #, color=who
+            geom_line( aes(y=test_suboMetrics_std, color='red' )) +
+            geom_line( aes(y=test_suboMetrics_mean, color='blue' )) +
+            # xlim(0.005,0.1) +
+            # ylim(8000000,11000000) +
+            #ylim(8500000,9500000) +
+            ggtitle('My Title'))
+        
+        
+
+
+
+#results <- data.table( seeds=c(12345,154784,12369,45411) )
