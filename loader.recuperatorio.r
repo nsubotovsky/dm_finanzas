@@ -6,11 +6,15 @@ library(data.table, warn.conflicts = FALSE, quietly=TRUE)
 library(glue, warn.conflicts = FALSE, quietly=TRUE)
 library(zeallot, warn.conflicts = FALSE, quietly=TRUE)
 library(xgboost, warn.conflicts = FALSE, quietly=TRUE )
+library(tictoc, warn.conflicts = FALSE, quietly=TRUE )
 
 
 #### Check environment stuff here:
 # http://adv-r.had.co.nz/Environments.html
 
+
+
+MASTER_SEED <- 123457
 
 
 ###### Differentiation ######
@@ -82,58 +86,6 @@ get.gain.vs.prob <- function( prediction, target )
 }
 
 
-plot.gain.vs.prob <- function(df)
-{
-    ggplot( df, aes(x=prob, y=gain)) + geom_line() + xlim(0,0.1) +ylim(5000000,10000000)
-}
-
-
-
-func.gain <- function(probabilidades, clase, punto_corte = 0.025)
-{
-    return(sum(
-            (probabilidades >= punto_corte) * ifelse(clase == "1", 19500, -500))
-    )
-}
-
-calc.prob.cutoff <- function( gain )
-{
-    return( gain %>% select(prob, gain) %>% filter(gain == max(gain)) %>% as.data.table() )
-}
-
-
-
-################ Prepare training df #################
-
-pick.months <- function(df, month.list)
-{
-    return( df %>% filter(foto_mes %in% ( month.list %>% sapply( get.month.at ) ) ) )
-}
-
-
-target.func.baja2 <- function(df)
-{
-   return( as.integer(ifelse(df$clase_ternaria == "BAJA+2", 1, 0)) )
-}
-
-
-target.func.baja12 <- function(df)
-{
-   return( as.integer(ifelse(df$clase_ternaria %in% c("BAJA+1","BAJA+2"), 1, 0)) )
-}
-
-
-split.prepare.target <- function(df, target.func=target.func.baja2)
-{
-    df$clase_ternaria <- target.func(df)
-    
-    # split traing and target
-    df.train <- df %>% select(-c("numero_de_cliente", "clase_ternaria"))
-    df.target <- df$clase_ternaria
-    
-    return(list(train=df.train, target=df.target))
-}
-
 
 ############# Scoring Daraframe ###############
 
@@ -150,31 +102,6 @@ score.prediction <- function( pred.probs, actual, cutoff=0.025, relative=TRUE )
 
 
 ################ Prepare training df - xgb specific #################
-
-
-
-prepare.class.df <- function(df)
-{
-    log.debug('preparing dataframe...')
-    return( df %>%
-        mutate( clase01=if_else(clase=="SI", 1, 0) ) %>%
-        select(-clase) )
-}
-
-
-
-# deprecate this (object below takes on this functionality)
-as.xgbMatrix <- function(df)
-{
-    df.output.as.01 <- df %>% prepare.class.df()
-    log.debug('converting to xgbMatrix...')
-    xgb.matrix.df <- xgb.DMatrix(
-        data  = data.matrix( df.output.as.01 %>% select( -id_cliente, -clase01 ) ),
-        label = df.output.as.01$clase01
-    )
-    return(xgb.matrix.df)
-}
-
 
 
 
@@ -231,8 +158,8 @@ DfHolder <- setRefClass('DfHolder',
         {
             return( df$id_cliente )
         }
-        
-))
+    )
+)
 
 
 
@@ -278,11 +205,31 @@ sample.df <- function( df, fraction, ..., replace=F )
 }
 
 
-split.train.test.df <- function( df, fraction, ... )
+split.train.test.df <- function( df, fraction, ..., seed=-1 )
 {
-  train <- df %>% sample.df( fraction, ... )
-  test <- df %>% anti_join(train, by='id_cliente')
-  return (list(train=train, test=test))
+    # If no parameter specified, set master seed
+    if (is.numeric(seed) & seed==-1)
+    {
+        set.seed(MASTER_SEED)
+        log.debug('[WARNING] Environment seed overriden with master seed {MASTER_SEED}!')
+    }
+    
+    # If a numeric seed is specified, set it
+    else if (is.numeric(seed))
+    {
+        set.seed(seed)
+        log.debug('[WARNING] Environment seed reset to {seed}', environment())
+    }
+    else
+    {
+        log.debug('[WARNING] USing current seed / state')
+    }
+    
+
+    
+    train <- df %>% sample.df( fraction, ... )
+    test <- df %>% anti_join(train, by='id_cliente')
+    return (list(train=train, test=test))
 }
 
 
@@ -304,5 +251,5 @@ log.debug <- function(msg, env=NULL)
         print(paste(Sys.time(), glue_data(env, msg), sep=' : '))
 
     else
-      print(paste(Sys.time(), glue(msg), sep=' : '))
+        print(paste(Sys.time(), glue(msg), sep=' : '))
 }
