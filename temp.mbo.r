@@ -1,33 +1,73 @@
 
 
-rm( list=ls() )
-gc()
-
 library(ggplot2)
 library(mlrMBO)
 library(tidyverse)
 
 
+set.seed(123456)
 
-funcToOptimize <- function (x)
+c(tdf, test.df) %<-% ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+train.df <- globalenv()$DfHolder$new( tdf )
+
+
+
+testFunc <- function(preds, dtrain)
 {
-    return ( (x$height+2.05)^2 + (x$len-2.954)^2)
+    return( list(
+        metrics='suboMetrics',
+        value=globalenv()$score.prediction(preds, dtrain %>% getinfo('label')) ))
+}
+
+
+autoTestAndScore <- function( x )
+{
+    # full.df
+    # seed=102191
+    # partition=0.7
+    # cutoff=0.025    
+    
+    #set.seed( seed )
+    
+
+    globalenv()$log.debug('training...')
+    cv.result = xgb.cv( 
+        data= train.df$as.xgb.train(),
+        nfold=5,
+        objective= "binary:logistic",
+        tree_method= "hist",
+        max_bin= 31,
+        base_score= train.df$mean,
+        eta= x$eta,
+        nrounds= 500,
+        colsample_bytree= x$colsample_bytree,
+        stratified=TRUE,
+        maximize = TRUE,
+        feval=testFunc        
+    )
+    
+    
+    mean_5 <- cv.result$evaluation_log %>% select( test_suboMetrics_mean ) %>% arrange( test_suboMetrics_mean ) %>% tail(5)
+    return( mean_5$test_suboMetrics_mean %>% mean() )
 }
 
 
 
+
+
+
 obj.fun <- makeSingleObjectiveFunction(
-    name='viboraje',
-    fn=funcToOptimize,
+    name='xgb_hiperparams',
+    fn=autoTestAndScore,
     par.set=makeParamSet(
-        makeNumericParam('height', lower=-5, upper=5),
-        makeNumericParam('len', lower=-5, upper=5)
+        makeNumericParam('eta', lower=.01, upper=.1),
+        makeNumericParam('colsample_bytree', lower=.1, upper=1)
     ),
     has.simple.signature = FALSE,
     #global.opt.params = list(x=-2, y=2),
-    minimize=TRUE
+    minimize=FALSE
 )       
-    
+
 
 print(obj.fun)
 
@@ -37,7 +77,7 @@ ctrl = makeMBOControl(propose.points = 1) %>%
     setMBOControlInfill(
         crit = makeMBOInfillCritEI(),
         opt = "focussearch", opt.focussearch.points = 20L
-        )
+    )
 
 lrn = makeMBOLearner(ctrl, obj.fun)
 
@@ -46,8 +86,6 @@ design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
 
 run <- mbo(fun=obj.fun, design = design, control=ctrl)
 
-# run = exampleRun(obj.fun, design = design, learner = lrn,
-#                  control = ctrl, points.per.dim = 50, show.info = TRUE)
+
 
 print(run)
-

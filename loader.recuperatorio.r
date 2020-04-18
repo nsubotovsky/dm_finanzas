@@ -162,6 +162,8 @@ prepare.class.df <- function(df)
 }
 
 
+
+# deprecate this (object below takes on this functionality)
 as.xgbMatrix <- function(df)
 {
     df.output.as.01 <- df %>% prepare.class.df()
