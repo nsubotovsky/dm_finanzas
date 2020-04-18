@@ -1,3 +1,22 @@
+rm(list = ls())
+gc()
+
+start.modules <- c("~/dm_finanzas/loader.recuperatorio.r", # linux location
+                   "C:/Users/Luxor/Documents/GitHub/Test_01/dm_finanzas/loader.recuperatorio.r" # windows location
+)
+
+
+# Load existing modules only
+load.modules <- function( modulesPath )
+{
+    for( modulePath in modulesPath)
+        if (file.exists(modulePath))
+            source(modulePath)
+}
+
+## load helper libs ##
+load.modules(start.modules)
+
 
 
 library(ggplot2)
@@ -5,11 +24,13 @@ library(mlrMBO)
 library(tidyverse)
 
 
-set.seed(123456)
+
 
 c(tdf, test.df) %<-% ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
 train.df <- globalenv()$DfHolder$new( tdf )
 
+
+set.seed(123457)
 
 
 testFunc <- function(preds, dtrain)
