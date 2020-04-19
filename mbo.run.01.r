@@ -74,10 +74,6 @@ autoTestAndScore <- function( x )
 }
 
 
-
-
-
-
 obj.fun <- makeSingleObjectiveFunction(
     name='xgb_hiperparams',
     fn=autoTestAndScore,
@@ -94,7 +90,13 @@ obj.fun <- makeSingleObjectiveFunction(
 print(obj.fun)
 
 
-ctrl = makeMBOControl(propose.points = 1) %>%
+
+mbo.file <- globalenv()$get.data.dir( 'mbo_01', 'mbo.txt', auto.create=TRUE )
+
+ctrl = makeMBOControl(propose.points = 1,
+                      save.on.disk.at.time=60,
+                      save.file.path = mbo.file
+                      ) %>%
     setMBOControlTermination( iters = 50L) %>%
     setMBOControlInfill(
         crit = makeMBOInfillCritEI(),
@@ -106,8 +108,16 @@ lrn = makeMBOLearner(ctrl, obj.fun)
 design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
 
 
-run <- mbo(fun=obj.fun, design = design, control=ctrl)
 
+if (file.exists(mbo.file)==TRUE) {run <- mboContinue(mbo.file)
+} else {run <- mbo(fun=obj.fun, design = design, control=ctrl)}
+
+
+interpert.mbo <- function(file)
+{
+    mbo.data <- get(load(file))
+    return(mbo.data$opt.path$env$path)
+}
 
 
 print(run)

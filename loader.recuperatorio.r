@@ -41,15 +41,27 @@ get.env <- function()
 }
 
 
-get.data.dir <- function( ... )
+make.dir <- function( path )
 {
-    return( file.path( get.env()$data_dir, ...  ) )
+  matches <- str_match(path,"^(.*)(?:\\\\|\\/)(.*)$")
+  dir.part <- matches[[2]]
+  dir.create(dir.part, recursive=TRUE, showWarnings=FALSE)
 }
 
 
-get.code.dir <- function( ... )
+get.data.dir <- function( ..., auto.create=FALSE )
 {
-    return( file.path( get.env()$code_dir, ...  ) )
+    full.path <- file.path( get.env()$data_dir, ...  )
+    if (auto.create) make.dir( full.path )
+    return( full.path )
+}
+
+
+get.code.dir <- function( ..., auto.create=FALSE )
+{
+    full.path <- file.path( get.env()$code_dir, ...  )
+    if (auto.create) make.dir( full.path )
+    return( full.path )
 }
 
 
