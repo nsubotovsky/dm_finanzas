@@ -62,6 +62,7 @@ autoTestAndScore <- function( x )
         eta= x$eta,
         nrounds= 500,
         colsample_bytree= x$colsample_bytree,
+        print_every_n = 10L,
         stratified=TRUE,
         maximize = TRUE,
         feval=testFunc        
@@ -114,6 +115,47 @@ print(run)
 
 
 ########## Results here ##############
+
+
+# 
+# 
+# print(run)
+# Recommended parameters:
+#     eta=0.043; colsample_bytree=0.253
+# Objective: y = 59.621
+# 
+# Optimization path
+# 6 + 50 entries in total, displaying last 10 (or less):
+#     eta colsample_bytree        y dob eol error.message exec.time           ei error.model train.time prop.type propose.time
+# 47 0.09755811        0.3279306 55.03728  41  NA          <NA>    49.070 -0.008299093        <NA>      0.100 infill_ei        0.129
+# 48 0.01270467        0.3206242 58.34268  42  NA          <NA>    54.346 -0.007720937        <NA>      0.095 infill_ei        0.151
+# 49 0.04158954        0.3066295 56.76057  43  NA          <NA>    54.633 -0.008820175        <NA>      0.097 infill_ei        0.136
+# 50 0.07213074        0.9600482 54.17299  44  NA          <NA>    52.783 -0.008368731        <NA>      0.113 infill_ei        0.149
+# 51 0.01619456        0.7225802 54.74434  45  NA          <NA>    55.729 -0.059474792        <NA>      0.161 infill_ei        0.132
+# 52 0.07710656        0.5729583 57.85710  46  NA          <NA>    52.406 -0.007889884        <NA>      0.127 infill_ei        0.141
+# 53 0.01520983        0.5383643 56.79092  47  NA          <NA>    54.855 -0.008354537        <NA>      0.135 infill_ei        0.127
+# 54 0.07786818        0.1512051 54.80372  48  NA          <NA>    52.246 -0.007984940        <NA>      0.075 infill_ei        0.143
+# 55 0.05380203        0.2804103 58.70423  49  NA          <NA>    50.183 -0.007576183        <NA>      0.122 infill_ei        0.142
+# 56 0.04466366        0.2803870 55.30118  50  NA          <NA>    50.255 -0.009013494        <NA>      0.102 infill_ei        0.126
+# se     mean
+# 47 1.514551 56.35057
+# 48 1.510290 56.32263
+# 49 1.522070 56.36472
+# 50 1.507498 56.37279
+# 51 1.036566 58.38879
+# 52 1.524690 56.29773
+# 53 1.525069 56.32772
+# 54 1.511927 56.33646
+# 55 1.512049 56.30807
+# 56 1.532063 56.35164
+
+
+
+
+
+
+
+
 
 
 # 
