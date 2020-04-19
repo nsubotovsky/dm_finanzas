@@ -97,7 +97,7 @@ ctrl = makeMBOControl(propose.points = 1,
                       save.on.disk.at.time=60,
                       save.file.path = mbo.file
                       ) %>%
-    setMBOControlTermination( iters = 50L) %>%
+    setMBOControlTermination( iters = 300L) %>%
     setMBOControlInfill(
         crit = makeMBOInfillCritEI(),
         opt = "focussearch", opt.focussearch.points = 20L
