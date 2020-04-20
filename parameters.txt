@@ -1,0 +1,32 @@
+
+
+
+Parameters of interest:
+-----------------------
+
+
+Obtained via mbo.run.01 with 300 iteratrions:
+
+
+
+eta= 0.0245,
+colsample_bytree= 0.212,
+
+
+Graphing gain vs iteration, obtained
+nrounds= 450, 
+
+
+
+ print(score)
+[1] 59.03815
+> 
+
+> print(score)
+[1] 61.00865
+> 
+
+3% gain as per temp.testft.r
+
+
+-----------------------------------------------------

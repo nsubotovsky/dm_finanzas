@@ -54,9 +54,9 @@ run.cv <- function(seed)
                  tree_method= "hist",
                  max_bin= 31,
                  base_score=train.df$mean,
-                 eta= 0.04,
-                 nrounds= 500, 
-                 colsample_bytree= 0.6,
+                 eta= 0.0245,
+                 nrounds= 600, 
+                 colsample_bytree= 0.212,
                  stratified=TRUE,
                  maximize = TRUE,
                  feval=testFunc
@@ -64,7 +64,7 @@ run.cv <- function(seed)
     return(aa$evaluation_log)
 }
 
-seedVector <- data.table( seed=c(12345,154784,12369))
+seedVector <- data.table( seed=c(12345,154784,12369,12,45,78,65,78451,45,78543,354,7897))
 
 rawResults <- seedVector %>% mutate( result=map( seed, run.cv ))
 
@@ -76,8 +76,11 @@ avgResults <- rawResults %>%
 
 
 print( avgResults %>% ggplot(aes(x=iter) ) + #, color=who
-           geom_line( aes(y=mean, color='blue' )) +
-           geom_line( aes(y=sd, color='red' )) +
+           geom_smooth( aes(y=mean, color='blue' )) +
+           geom_smooth( aes(y=sd, color='red' )) +
+           xlim(100,600) +
+           ylim(56,58) +
+#           ylim(5,10) +    
            ggtitle('gain and sd vs iteration')
 )
 

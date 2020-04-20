@@ -31,26 +31,21 @@ setwd(workingdir)
 globalenv()$log.debug('Working dir set to {workingdir}', environment())  
 
 
-full.df <- globalenv()$get.train.df()
-
-
-c(train.df, test.df) %<-% ( full.df %>% split.train.test.df(0.7, clase) )
-
-
-
-
-train.df.xgbmatrix <- train.df %>% globalenv()$as.xgbMatrix()
+datasets <- ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+train.df <- globalenv()$DfHolder$new(datasets$train)
+validate.df <- globalenv()$DfHolder$new(datasets$test)
 
 
 set.seed( 102191 )
 
+
 globalenv()$log.debug('training...')
-modelo_300 = xgb.train( 
-    data= train.df.xgbmatrix,
+modelo_original = xgb.train( 
+    data= train.df$as.xgb.train(),
     objective= "binary:logistic",
     tree_method= "hist",
     max_bin= 31,
-    base_score= mean( getinfo(train.df.xgbmatrix, "label") ),
+    base_score=train.df$mean,
     eta= 0.04,
     nrounds= 300, 
     colsample_bytree= 0.6
@@ -58,31 +53,30 @@ modelo_300 = xgb.train(
 
 
 globalenv()$log.debug('training...')
-modelo_400 = xgb.train( 
-    data= train.df.xgbmatrix,
+modelo_tuned = xgb.train( 
+    data= train.df$as.xgb.train(),
     objective= "binary:logistic",
     tree_method= "hist",
     max_bin= 31,
-    base_score= mean( getinfo(train.df.xgbmatrix, "label") ),
-    eta= 0.04,
-    nrounds= 350, 
-    colsample_bytree= 0.6
+    base_score=train.df$mean,
+    eta= 0.0245,
+    nrounds= 450, 
+    colsample_bytree= 0.212
 )
 
 
 
-aa <- test.df %>% globalenv()$prepare.class.df()
 
-
-prediction_300 <- modelo_300 %>% predict( data.matrix( aa %>% select( -clase01, -id_cliente ) ) )
-
-prediction_400 <- modelo_400 %>% predict( data.matrix( aa %>% select( -clase01, -id_cliente ) ) )
-
+predictions <- modelo_original %>% predict( validate.df$as.xgb.predict())
+score <- globalenv()$score.prediction(predictions, validate.df$as.results() )
+print(score)
 
 
 
-score.prediction( prediction_300, aa$clase01 )
+predictions <- modelo_tuned %>% predict( validate.df$as.xgb.predict())
+score <- globalenv()$score.prediction(predictions, validate.df$as.results() )
+print(score)
 
-score.prediction( prediction_400, aa$clase01 )
+
 
 
