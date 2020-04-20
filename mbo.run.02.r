@@ -101,7 +101,8 @@ ctrl = makeMBOControl(propose.points = 4,
     setMBOControlInfill(
         crit = makeMBOInfillCritCB(),
         opt = "focussearch", opt.focussearch.points = 20L
-    )
+    ) %>%
+    setMBOControlMultiPoint(method = "cb")
 
 lrn = makeMBOLearner(ctrl, obj.fun)
 
@@ -109,7 +110,7 @@ design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
 
 
 library(parallelMap)
-parallelStartMulticore(cpus = 4, show.info = TRUE)
+parallelStartMulticore(cpus = 56, show.info = TRUE)
 
 
 if (file.exists(mbo.file)==TRUE) {run <- mboContinue(mbo.file)

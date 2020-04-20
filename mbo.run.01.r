@@ -123,6 +123,15 @@ interpert.mbo <- function(file)
 print(run)
 
 
+######################################
+#        300-iter run results:
+#
+# > print(run)
+# Recommended parameters:
+#     eta=0.0245; colsample_bytree=0.212
+# Objective: y = 59.966
+# 
+
 
 ########## Results here ##############
 
