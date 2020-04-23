@@ -20,9 +20,9 @@ load.modules(start.modules)
 
 ### Type test code in here.
 
-df <- get.train.df()
-dataset <- get.train.df() %>% enrich.fe.std()
-mega.df <- dataset %>% enrich.fe.extended()
+df.fe.non <- get.train.df()
+df.fe.std <- df.fe.non %>% enrich.fe.std()
+df.fe.ext <- df.fe.std %>% enrich.fe.extended()
 
 
 
@@ -30,7 +30,7 @@ autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 
 {
     set.seed( seed )
     
-    datasets <- ( full.df %>% split.train.test.df(partition, clase) )
+    datasets <- ( full.df %>% split.train.test.df(partition, clase, seed=NA) )
     train.df <- globalenv()$DfHolder$new(datasets$train)
     validate.df <- globalenv()$DfHolder$new(datasets$test)
     
@@ -53,11 +53,16 @@ autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 
     return(score)
 }
 
-seed = 102191
 
-score.no.fe <- autoTestAndScore(df, seed=seed)
-score.std.fe <- autoTestAndScore(dataset, seed=seed)
-score.mega.fe <- autoTestAndScore(mega.df, seed=seed)
+a <- globalenv()$get.seeds( 20 )
 
+a <- a %>% mutate( score.base=map( seed, function(seed) autoTestAndScore(df.fe.non, seed=seed) ) )
+a <- a %>% mutate( score.fe.std=map( seed, function(seed) autoTestAndScore(df.fe.std, seed=seed) ) )
+a <- a %>% mutate( score.fe.ext=map( seed, function(seed) autoTestAndScore(df.fe.ext, seed=seed) ) )
+
+
+b <- a %>% mutate( score.fe.std=map2( score.base, score.fe.std, function( a,b ) b/a*100 ) )
+b <- b %>% mutate( score.fe.ext=map2( score.base, score.fe.ext, function( a,b ) b/a*100 ) )
+b <- b %>% as.data.table( b %>% lapply(unlist) )
 
 

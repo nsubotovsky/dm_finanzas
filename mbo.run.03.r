@@ -1,4 +1,4 @@
-##### Failed experiment to try and parallelize MBO #########
+################ Experiment - hyperoptimize for extended df ######################
 
 rm(list = ls())
 gc()
@@ -28,11 +28,19 @@ library(tidyverse)
 
 
 
-c(tdf, test.df) %<-% ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+
+train.df <- globalenv()$get.train.df() %>% enrich.fe.std()
+
+
+set.seed( globalenv()$MASTER_SEED )
+
+# split train - test
+c(tdf, test.df) %<-% ( train.df %>% split.train.test.df(0.7, clase, seed=NA) )
 train.df <- globalenv()$DfHolder$new( tdf )
 
 
-set.seed(123457)
+##### this tdf (test data frame) is not being used in this script directly ###
+##### need to test later on.
 
 
 testFunc <- function(preds, dtrain)
@@ -45,14 +53,6 @@ testFunc <- function(preds, dtrain)
 
 autoTestAndScore <- function( x )
 {
-    # full.df
-    # seed=102191
-    # partition=0.7
-    # cutoff=0.025    
-    
-    #set.seed( seed )
-    
-    
     globalenv()$log.debug('training...')
     cv.result = xgb.cv( 
         data= train.df$as.xgb.train(),
@@ -93,32 +93,26 @@ print(obj.fun)
 
 
 
-mbo.file <- globalenv()$get.data.dir( 'mbo_02', 'mbo.txt', auto.create=TRUE )
+mbo.file <- globalenv()$get.data.dir( 'mbo_03_fe', 'mbo.txt', auto.create=TRUE )
 
-ctrl = makeMBOControl(propose.points = 4,
+ctrl = makeMBOControl(propose.points = 1,
                       save.on.disk.at.time=60,
                       save.file.path = mbo.file
-) %>%
-    setMBOControlTermination( iters = 20L) %>%
+                      ) %>%
+    setMBOControlTermination( iters = 600L) %>%
     setMBOControlInfill(
-        crit = makeMBOInfillCritCB(),
+        crit = makeMBOInfillCritEI(),
         opt = "focussearch", opt.focussearch.points = 20L
-    ) %>%
-    setMBOControlMultiPoint(method = "cb")
+    )
 
 lrn = makeMBOLearner(ctrl, obj.fun)
 
 design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
 
 
-library(parallelMap)
-parallelStartMulticore(cpus = 56, show.info = TRUE)
-
 
 if (file.exists(mbo.file)==TRUE) {run <- mboContinue(mbo.file)
 } else {run <- mbo(fun=obj.fun, design = design, control=ctrl)}
-
-parallelStop()
 
 
 interpert.mbo <- function(file)
@@ -129,4 +123,3 @@ interpert.mbo <- function(file)
 
 
 print(run)
-
