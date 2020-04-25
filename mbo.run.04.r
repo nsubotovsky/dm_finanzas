@@ -142,3 +142,13 @@ print(run)
 
 ggplot(interpert.mbo(mbo.file) %>% filter(y > 55), aes(x = eta, y = colsample_bytree, color=y))+ geom_point() + xlim(0,.1) + ylim(0,1) + scale_color_gradient(low="blue", high="red")
 
+
+
+##############################################
+##       best options considering, so far...
+##
+##          eta colsample_bytree        y
+## 1 0.02062864        0.1318898 60.15280
+## 2 0.03043083        0.1034980 60.51699
+##
+##
