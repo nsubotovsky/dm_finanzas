@@ -140,5 +140,16 @@ interpert.mbo <- function(file)
 print(run)
 
 
-ggplot(interpert.mbo(mbo.file) %>% filter(y > 55), aes(x = eta, y = colsample_bytree, color=y))+ geom_point() + xlim(0,.1) + ylim(0,1) + scale_color_gradient(low="blue", high="red")
+ggplot(interpert.mbo(mbo.file) %>% filter(y > 61.8), aes(x = eta, y = colsample_bytree, color=y))+ geom_point() + xlim(0,.1) + ylim(0,1) + scale_color_gradient(low="blue", high="red")
+
+
+################
+## Resultados ##
+################
+#
+# era              = 0.01
+# colsample_bytree = 0.263
+#
+#
+#
 
