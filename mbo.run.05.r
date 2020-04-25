@@ -147,9 +147,9 @@ ggplot(interpert.mbo(mbo.file) %>% filter(y > 61.8), aes(x = eta, y = colsample_
 ## Resultados ##
 ################
 #
-# era              = 0.01
-# colsample_bytree = 0.263
-#
-#
-#
+# eta colsample_bytree        y
+# 1   0.01000738        0.2625816 61.89140
+# 2   0.01943404        0.2642841 61.75259
+# 3   0.01010497        0.2522623 61.68107#
+# 
 
