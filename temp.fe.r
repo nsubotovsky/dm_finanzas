@@ -20,56 +20,35 @@ load.modules(start.modules)
 
 ### Type test code in here.
 
+full.calc <- function( seed, full.df )
+{
+    xgbWokflow <- XgBoostWorkflow$new( full.df=full.df,
+                                       split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
+                                       params=list(eta=0.04, colsample_bytree=0.6, nrounds=300),
+                                       train.seed=seed
+    )
+    xgbWokflow$train()
+    
+    return( xgbWokflow$calc_score() )
+}
+
+
+
 df.fe.non <- get.train.df()
 df.fe.std <- df.fe.non %>% enrich.fe.std()
 df.fe.ext <- df.fe.std %>% enrich.fe.extended()
 
 
 
-autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 )
-{
-
-    datasets <- ( full.df %>% split.train.test.df(partition, seed=seed) )
-    train.df <- globalenv()$DfHolder$new(datasets$train)
-    validate.df <- globalenv()$DfHolder$new(datasets$test)
-    
-    
-    x <- list(eta=0.04, colsample_bytree=0.6, nrounds=300)
-    
-    ##if (length(full.df) == 207) x <- list(eta=0.02, colsample_bytree=0.132, nrounds=300)
-    
-    set.seed( seed )
-
-    globalenv()$log.debug('training...')
-    model = xgb.train( 
-        data= train.df$as.xgb.train(),
-        objective= "binary:logistic",
-        tree_method= "hist",
-        max_bin= 31,
-        base_score= train.df$mean,
-        eta=x$eta,
-        nrounds=x$nrounds, 
-        colsample_bytree=x$colsample_bytree
-    )
-    
-    
-    predictions <- model %>% predict( validate.df$as.xgb.predict())
-    score <- globalenv()$score.prediction(predictions, validate.df$as.results(), cutoff )
-    return(score)
-}
+aa <- globalenv()$get.seeds( 3 )
+aa <- aa %>% mutate( score.base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non) ) )
+aa <- aa %>% mutate( score.fe.std=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std) ) )
+aa <- aa %>% mutate( score.fe.ext=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.ext) ) )
+aa <- aa %>% unnest()
 
 
-a <- globalenv()$get.seeds( 1 )
-
-a <- a %>% mutate( score.base=map( seed, function(seed) autoTestAndScore(df.fe.non, seed=seed) ) )
-a <- a %>% mutate( score.fe.std=map( seed, function(seed) autoTestAndScore(df.fe.std, seed=seed) ) )
-a <- a %>% mutate( score.fe.ext=map( seed, function(seed) autoTestAndScore(df.fe.ext, seed=seed) ) )
-a <- a %>% unnest()
-
-
-b <- a %>% mutate( score.fe.std=map2( score.base, score.fe.std, function( a,b ) b/a*100 ) )
+b <- aa %>% mutate( score.fe.std=map2( score.base, score.fe.std, function( a,b ) b/a*100 ) )
 b <- b %>% mutate( score.fe.ext=map2( score.base, score.fe.ext, function( a,b ) b/a*100 ) )
 b <- b %>% as.data.table( b %>% lapply(unlist) )
 b <- b %>% unnest()
-
 
