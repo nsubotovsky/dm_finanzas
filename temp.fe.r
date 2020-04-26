@@ -40,7 +40,7 @@ df.fe.ext <- df.fe.std %>% enrich.fe.extended()
 
 
 
-aa <- globalenv()$get.seeds( 3 )
+aa <- globalenv()$get.seeds( 20 )
 aa <- aa %>% mutate( score.base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non) ) )
 aa <- aa %>% mutate( score.fe.std=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std) ) )
 aa <- aa %>% mutate( score.fe.ext=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.ext) ) )

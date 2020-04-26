@@ -274,6 +274,7 @@ get.seeds <- function( n=20 )
 {
     return( data.table(seed=c(
     MASTER_SEED,
+    102191,
     253751,
     466787,
     219277,
