@@ -58,5 +58,48 @@ XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
 
 
 
+XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
+    fields = c('cv.result', 'params', 'train.df'),
+    
+    methods=list(
+        initialize=function( params, train.df )
+        {
+            params <<- params
+            train.df <<- DfHolder$new(train.df)
+        },
+        test.func=function(preds, dtrain)
+        {
+            return( list(
+                metrics='suboMetrics',
+                value=globalenv()$score.prediction(preds, dtrain %>% getinfo('label')) ))
+        },
+        go=function( seed=NA )
+        {
+            if (is.numeric(seed)) set.seed(seed)
+            
+            globalenv()$log.debug('running CV...')
+            tic('CV Run complete')
+            cv.result <<- xgb.cv( 
+                data= train.df$as.xgb.train(),
+                nfold=5,
+                objective= "binary:logistic",
+                tree_method= "hist",
+                max_bin= 31,
+                base_score= train.df$mean,
+                nrounds          = params$nrounds,
+                eta              = params$eta,
+                colsample_bytree = params$colsample_bytree,
+                print_every_n = 50L,
+                stratified=TRUE,
+                maximize = TRUE,
+                feval=.self$test.func
+            )
+            toc()
+        }
+    )
+)
+
+
+
 
 

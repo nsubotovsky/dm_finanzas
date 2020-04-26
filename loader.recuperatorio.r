@@ -218,7 +218,7 @@ sample.df <- function( df, fraction, ..., replace=F )
 }
 
 
-split.train.test.df <- function( df, fraction, seed=-1 )
+split.train.test.df <- function( df, fraction=0.7, seed=-1 )
 {
     # If no parameter specified, set master seed
     if (is.numeric(seed) & seed==-1)
