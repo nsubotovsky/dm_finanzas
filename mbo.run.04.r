@@ -35,7 +35,7 @@ train.df <- globalenv()$get.train.df() %>% enrich.fe.std()
 set.seed( globalenv()$MASTER_SEED )
 
 # split train - test
-c(tdf, test.df) %<-% ( train.df %>% split.train.test.df(0.7, clase, seed=NA) )
+c(tdf, test.df) %<-% ( train.df %>% split.train.test.df(0.7, seed=NA) )
 train.df <- globalenv()$DfHolder$new( tdf )
 
 

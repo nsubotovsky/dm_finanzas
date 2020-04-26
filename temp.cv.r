@@ -28,7 +28,7 @@ library(ggplot2)
 
 
 
-datasets <- ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+datasets <- ( globalenv()$get.train.df() %>% enrich.fe.std() %>% split.train.test.df(0.7) )
 
 train.df <- globalenv()$DfHolder$new(datasets$train)
 validate.df <- globalenv()$DfHolder$new(datasets$test)
@@ -54,19 +54,19 @@ run.cv <- function(seed)
                  tree_method= "hist",
                  max_bin= 31,
                  base_score=train.df$mean,
-                 eta= 0.0245,
+                 eta= 0.0176,
                  nrounds= 600, 
-                 colsample_bytree= 0.212,
+                 colsample_bytree= 0.143,
                  stratified=TRUE,
                  maximize = TRUE,
+                 print_every_n = 10L,
                  feval=testFunc
     )
     return(aa$evaluation_log)
 }
 
-seedVector <- data.table( seed=c(12345,154784,12369,12,45,78,65,78451,45,78543,354,7897))
 
-rawResults <- seedVector %>% mutate( result=map( seed, run.cv ))
+rawResults <- get.seeds(5) %>% mutate( result=map( seed, run.cv ))
 
 
 avgResults <- rawResults %>%
@@ -76,10 +76,10 @@ avgResults <- rawResults %>%
 
 
 print( avgResults %>% ggplot(aes(x=iter) ) + #, color=who
-           geom_smooth( aes(y=mean, color='blue' )) +
+           geom_line( aes(y=mean, color='blue' )) +
            geom_smooth( aes(y=sd, color='red' )) +
            xlim(100,600) +
-           ylim(56,58) +
+           ylim(59,61) +
 #           ylim(5,10) +    
            ggtitle('gain and sd vs iteration')
 )

@@ -26,7 +26,7 @@ library(tidyverse)
 
 
 
-c(tdf, test.df) %<-% ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+c(tdf, test.df) %<-% ( globalenv()$get.train.df() %>% split.train.test.df(0.7) )
 train.df <- globalenv()$DfHolder$new( tdf )
 
 

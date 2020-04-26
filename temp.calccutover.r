@@ -64,7 +64,7 @@ mega.calc <- function( seed )
     set.seed(seed)
     
     #split datasets
-    datasets <- ( globalenv()$get.train.df() %>% split.train.test.df(0.7, clase) )
+    datasets <- ( globalenv()$get.train.df() %>% split.train.test.df(0.7) )
     train.df <- globalenv()$DfHolder$new(datasets$train)
     validate.df <- globalenv()$DfHolder$new(datasets$test)
     

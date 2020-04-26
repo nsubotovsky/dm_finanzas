@@ -7,6 +7,7 @@ library(glue, warn.conflicts = FALSE, quietly=TRUE)
 library(zeallot, warn.conflicts = FALSE, quietly=TRUE)
 library(xgboost, warn.conflicts = FALSE, quietly=TRUE )
 library(tictoc, warn.conflicts = FALSE, quietly=TRUE )
+library(purrr, warn.conflicts = FALSE, quietly=TRUE )
 
 
 #### Check environment stuff here:
@@ -217,7 +218,7 @@ sample.df <- function( df, fraction, ..., replace=F )
 }
 
 
-split.train.test.df <- function( df, fraction, ..., seed=-1 )
+split.train.test.df <- function( df, fraction, seed=-1 )
 {
     # If no parameter specified, set master seed
     if (is.numeric(seed) & seed==-1)
@@ -236,11 +237,11 @@ split.train.test.df <- function( df, fraction, ..., seed=-1 )
     {
         log.debug('[WARNING] USing current seed / state')
     }
-    
 
     
-    train <- df %>% sample.df( fraction, ... )
+    train <- df %>% sample.df( fraction,clase, replace=F )
     test <- df %>% anti_join(train, by='id_cliente')
+
     return (list(train=train, test=test))
 }
 
@@ -457,3 +458,6 @@ enrich.fe.extended <- function( dataset.original )
     
     return( dataset )
 }
+
+source(get.code.dir('testing.pipeline.r'))
+

@@ -28,12 +28,17 @@ df.fe.ext <- df.fe.std %>% enrich.fe.extended()
 
 autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 )
 {
-    set.seed( seed )
-    
-    datasets <- ( full.df %>% split.train.test.df(partition, clase, seed=NA) )
+
+    datasets <- ( full.df %>% split.train.test.df(partition, seed=seed) )
     train.df <- globalenv()$DfHolder$new(datasets$train)
     validate.df <- globalenv()$DfHolder$new(datasets$test)
     
+    
+    x <- list(eta=0.04, colsample_bytree=0.6, nrounds=300)
+    
+    ##if (length(full.df) == 207) x <- list(eta=0.02, colsample_bytree=0.132, nrounds=300)
+    
+    set.seed( seed )
 
     globalenv()$log.debug('training...')
     model = xgb.train( 
@@ -42,9 +47,9 @@ autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 
         tree_method= "hist",
         max_bin= 31,
         base_score= train.df$mean,
-        eta= 0.04,
-        nrounds= 300, 
-        colsample_bytree= 0.6
+        eta=x$eta,
+        nrounds=x$nrounds, 
+        colsample_bytree=x$colsample_bytree
     )
     
     
@@ -54,15 +59,17 @@ autoTestAndScore <- function( full.df, seed=102191, partition=0.7, cutoff=0.025 
 }
 
 
-a <- globalenv()$get.seeds( 20 )
+a <- globalenv()$get.seeds( 1 )
 
 a <- a %>% mutate( score.base=map( seed, function(seed) autoTestAndScore(df.fe.non, seed=seed) ) )
 a <- a %>% mutate( score.fe.std=map( seed, function(seed) autoTestAndScore(df.fe.std, seed=seed) ) )
 a <- a %>% mutate( score.fe.ext=map( seed, function(seed) autoTestAndScore(df.fe.ext, seed=seed) ) )
+a <- a %>% unnest()
 
 
 b <- a %>% mutate( score.fe.std=map2( score.base, score.fe.std, function( a,b ) b/a*100 ) )
 b <- b %>% mutate( score.fe.ext=map2( score.base, score.fe.ext, function( a,b ) b/a*100 ) )
 b <- b %>% as.data.table( b %>% lapply(unlist) )
+b <- b %>% unnest()
 
 
