@@ -170,7 +170,7 @@ XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
              cvparams$nrounds <- .self$nrounds
 
              cv <- XgBoostCvWorkflow$new(params=cvparams, train.df=.self$dataframe)
-             return( cv$go() )
+             return( cv$go(seed) )
          },
          get.mbo.fromfile=function()
          {
