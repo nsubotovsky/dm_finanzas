@@ -59,7 +59,7 @@ XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
 
 
 XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
-    fields = c('cv.result', 'params', 'train.df'),
+    fields = c('cv.result', 'params', 'train.df', 'cv.score'),
     
     methods=list(
         initialize=function( params, train.df )
@@ -95,11 +95,99 @@ XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
                 feval=.self$test.func
             )
             toc()
+            
+            cv.score <<- .self$getTop5()
+            return(cv.score)
+        },
+        getTop5=function()
+        {
+            top_5 <- cv.result$evaluation_log %>%
+                select( test_suboMetrics_mean ) %>%
+                arrange( test_suboMetrics_mean ) %>%
+                tail(5)
+            return ( top_5$test_suboMetrics_mean %>% mean() )
+            
         }
     )
 )
 
 
+XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
+     fields = c( 'dataframe', 'output.file', 'iterations.per.point', 'total.points', 'parameters.set', 'ouput.run', 'nrounds'),
+     
+     methods=list(
+         initialize=function( dataframe, output.folder, parameters.set, iterations.per.point=5, total.points=50, nrounds=500 )
+         {
+             output.file <<- globalenv()$get.data.dir( output.folder, 'mbo.txt', auto.create=TRUE )
+             iterations.per.point <<- iterations.per.point
+             total.points <<- total.points
+             parameters.set <<- parameters.set
+             dataframe <<- dataframe
+             nrounds <<- nrounds
+         },
+         go=function()
+         {
+             obj.fun <- makeSingleObjectiveFunction(
+                 name='xgb_hiperparams',
+                 fn=.self$func.wrapper,
+                 par.set=.self$parameters.set,
+                 has.simple.signature = FALSE,
+                 minimize=FALSE)
+             
+             ctrl = makeMBOControl(propose.points = 1,
+                                   save.on.disk.at.time=60,
+                                   save.file.path = .self$output.file) %>%
+                    setMBOControlTermination( iters = 600L) %>%
+                    setMBOControlInfill(
+                        crit = makeMBOInfillCritEI(),
+                        opt = "focussearch", opt.focussearch.points = 20L
+                    )
+             
+             lrn = makeMBOLearner(ctrl, obj.fun)
+             
+             design = generateDesign(6L, getParamSet(obj.fun), fun = lhs::maximinLHS)
+             
+             
+             if (file.exists(.self$output.file)==TRUE) {
+                 ouput.run <<- mboContinue(.self$output.file)
+                 
+             } else {
+                 ouput.run <<- mbo(fun=obj.fun, design=design, control=ctrl, learner=lrn)}
+             
+             
+         },
+         func.wrapper=function( x )
+         {
+             seeds <- get.seeds(.self$iterations.per.point)
+             seeds <- seeds %>% mutate(params=rep(list(x),.self$iterations.per.point))
+             seeds.with.results <- seeds %>% mutate( result=map2( params, seed, .self$autoTestAndScore))
 
+             return( seeds.with.results$result %>% unlist() %>% mean() )
+         },
+         autoTestAndScore=function( x, seed=NA )
+         {
+             cvparams <- x
+             cvparams$nrounds <- .self$nrounds
+
+             cv <- XgBoostCvWorkflow$new(params=cvparams, train.df=.self$dataframe)
+             return( cv$go() )
+         },
+         get.mbo.fromfile=function()
+         {
+             mbo.data <- get(load(output.file))
+             return(mbo.data$opt.path$env$path)
+         },
+         print.mbo=function(limit)
+         {
+             print(
+                 ggplot(.self$get.mbo.fromfile() %>%filter(y > 55),
+                     aes(x = eta, y = colsample_bytree, color=y) ) +
+                     geom_point() +
+                     xlim(0,.1) +
+                     ylim(0,1) +
+                     scale_color_gradient(low="blue", high="red"))
+         }
+     )
+)
 
 
