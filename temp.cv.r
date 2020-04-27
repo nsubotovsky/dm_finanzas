@@ -27,46 +27,15 @@ library( "xgboost" )
 library(ggplot2)
 
 
+train.df <- ( globalenv()$get.train.df() %>% enrich.fe.std() %>% split.train.test.df(0.7) )$train
 
-datasets <- ( globalenv()$get.train.df() %>% enrich.fe.std() %>% split.train.test.df(0.7) )
-
-train.df <- globalenv()$DfHolder$new(datasets$train)
-validate.df <- globalenv()$DfHolder$new(datasets$test)
-
-
-
-testFunc <- function(preds, dtrain)
-{
-    return( list(
-        metrics='suboMetrics',
-        value=globalenv()$score.prediction(preds, dtrain %>% getinfo('label')) ))
-}
+params<-list(nrounds          = 600,
+             eta              = 0.176,
+             colsample_bytree = 0.143)
 
 
-
-
-run.cv <- function(seed)
-{
-    set.seed( seed )
-    aa <- xgb.cv(data=train.df$as.xgb.train(),
-                 nfold=5,
-                 objective= "binary:logistic",
-                 tree_method= "hist",
-                 max_bin= 31,
-                 base_score=train.df$mean,
-                 eta= 0.0176,
-                 nrounds= 600, 
-                 colsample_bytree= 0.143,
-                 stratified=TRUE,
-                 maximize = TRUE,
-                 print_every_n = 10L,
-                 feval=testFunc
-    )
-    return(aa$evaluation_log)
-}
-
-
-rawResults <- get.seeds(5) %>% mutate( result=map( seed, run.cv ))
+rawResults <- get.seeds(5) %>%
+    mutate( result=map( seed, function(seed) XgBoostCvWorkflow$new(params=params, train.df=train.df)$go(seed)$cv.result$evaluation_log ))
 
 
 avgResults <- rawResults %>%
@@ -83,6 +52,7 @@ print( avgResults %>% ggplot(aes(x=iter) ) + #, color=who
 #           ylim(5,10) +    
            ggtitle('gain and sd vs iteration')
 )
+
 
 
 top5Values <- (avgResults %>% arrange(mean) %>% tail(5))

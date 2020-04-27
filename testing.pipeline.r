@@ -1,6 +1,7 @@
 
 library(ggplot2)
 library(mlrMBO)
+library(lightgbm)
 
 standard.split <- function( df, frac, seed=-1 )
 {
@@ -60,7 +61,7 @@ XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
 
 
 
-XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
+BaseCvWorkflow <- setRefClass('BaseCvWorkflow',
     fields = c('cv.result', 'params', 'train.df', 'cv.score'),
     
     methods=list(
@@ -68,50 +69,106 @@ XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
         {
             params <<- params
             train.df <<- DfHolder$new(train.df)
-        },
-        test.func=function(preds, dtrain)
-        {
-            return( list(
-                metrics='suboMetrics',
-                value=globalenv()$score.prediction(preds, dtrain %>% getinfo('label')) ))
-        },
-        go=function( seed=NA )
-        {
-            if (is.numeric(seed)) set.seed(seed)
-            
-            globalenv()$log.debug('running CV...')
-            tic('CV Run complete')
-            cv.result <<- xgb.cv( 
-                data= train.df$as.xgb.train(),
-                nfold=5,
-                objective= "binary:logistic",
-                tree_method= "hist",
-                max_bin= 31,
-                base_score= train.df$mean,
-                nrounds          = params$nrounds,
-                eta              = params$eta,
-                colsample_bytree = params$colsample_bytree,
-                print_every_n = 50L,
-                stratified=TRUE,
-                maximize = TRUE,
-                feval=.self$test.func
-            )
-            toc()
-            
-            cv.score <<- .self$getTop5()
-            return(cv.score)
-        },
-        getTop5=function()
-        {
-            top_5 <- cv.result$evaluation_log %>%
-                select( test_suboMetrics_mean ) %>%
-                arrange( test_suboMetrics_mean ) %>%
-                tail(5)
-            return ( top_5$test_suboMetrics_mean %>% mean() )
-            
         }
     )
 )
+
+
+XgBoostCvWorkflow <- setRefClass('XgBoostCvWorkflow',
+     contains="BaseCvWorkflow",
+     methods=list(
+         test.func=function(preds, dtrain)
+         {
+             return( list(
+                 metrics='suboMetrics',
+                 value=globalenv()$score.prediction(preds, dtrain %>% xgboost::getinfo('label')) ))
+         },
+         go=function( seed=NA )
+         {
+             if (is.numeric(seed)) set.seed(seed)
+             
+             globalenv()$log.debug('running CV...')
+             tic('CV Run complete')
+             cv.result <<- xgb.cv( 
+                 data= train.df$as.xgb.train(),
+                 nfold=5,
+                 objective= "binary:logistic",
+                 tree_method= "hist",
+                 max_bin= 31,
+                 base_score= train.df$mean,
+                 nrounds          = params$nrounds,
+                 eta              = params$eta,
+                 colsample_bytree = params$colsample_bytree,
+                 print_every_n = 50L,
+                 stratified=TRUE,
+                 maximize = TRUE,
+                 feval=.self$test.func
+             )
+             toc()
+             
+             cv.score <<- .self$getTop5()
+             return(.self)
+         },
+         getTop5=function()
+         {
+             top_5 <- cv.result$evaluation_log %>%
+                 select( test_suboMetrics_mean ) %>%
+                 arrange( test_suboMetrics_mean ) %>%
+                 tail(5)
+             return ( top_5$test_suboMetrics_mean %>% mean() )
+             
+         }
+     )
+)
+
+
+
+LgbmCvWorkflow <- setRefClass('LgbmCvWorkflow',
+     contains="BaseCvWorkflow",
+     methods=list(
+         test.func=function(preds, dtrain)
+         {
+             return( list(
+                 name='suboMetrics',
+                 value=globalenv()$score.prediction(preds, dtrain$getinfo('label')),
+                 higher_better=TRUE))
+         },
+         go=function( seed=NA )
+         {
+             #if (is.numeric(seed)) set.seed(seed)
+             
+             globalenv()$log.debug('running CV...')
+             tic('CV Run complete')
+             cv.result <<- lgb.cv(
+                 data = df.train$as.lgb.train(),
+                 nfold=5L,
+                 objective = "binary",
+                 metric="suboMetrics",
+                 showsd = TRUE,
+                 stratified=TRUE,
+                 seed= seed,
+                 boost_from_average=TRUE,
+                 bagging_fraction=1,
+                 nrounds          = .self$params$nrounds,
+                 feature_fraction = .self$params$feature_fraction,
+                 learning_rate    = .self$params$learning_rate,
+                 max_depth=6,
+                 max_bin=255,
+                 num_leaves=1024,
+                 verbose = 5,
+                 eval_freq=5,
+                 min_data_in_leaf = 5,
+                 eval=.self$test.func
+             )
+             toc()
+             
+             cv.score <<- .self$cv.result$best_score
+             return(.self)
+         }
+     )
+)
+
+
 
 
 XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
