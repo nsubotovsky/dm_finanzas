@@ -139,7 +139,7 @@ XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
              ctrl = makeMBOControl(propose.points = 1,
                                    save.on.disk.at.time=60,
                                    save.file.path = .self$output.file) %>%
-                    setMBOControlTermination( iters = 600L) %>%
+                    setMBOControlTermination( iters = .self$total.points) %>%
                     setMBOControlInfill(
                         crit = makeMBOInfillCritEI(),
                         opt = "focussearch", opt.focussearch.points = 20L
