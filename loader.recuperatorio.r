@@ -145,6 +145,19 @@ DfHolder <- setRefClass('DfHolder',
             log.debug('Init DF done.')
         },
         
+        as.lgb.train = function()
+        {
+            return( lgb.Dataset(
+                data  = data.matrix( df %>% select( -id_cliente, -clase01 ) ),
+                label = df$clase01,
+                free_raw_data=FALSE
+            ))
+        },
+        as.lgb.predict = function()
+        {
+            return( as.matrix( df %>% select( -id_cliente, -matches('^clase'))))
+        },        
+
         # Make the df into an xgb trainable thing
         as.xgb.train = function()
         {

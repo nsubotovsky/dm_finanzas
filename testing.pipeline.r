@@ -182,7 +182,7 @@ XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
          print.mbo=function(limit)
          {
              print(
-                 ggplot(.self$get.mbo.fromfile() %>%filter(y > 55),
+                 ggplot(.self$get.mbo.fromfile() %>%filter(y > limit),
                      aes(x = eta, y = colsample_bytree, color=y) ) +
                      geom_point() +
                      xlim(0,.1) +
