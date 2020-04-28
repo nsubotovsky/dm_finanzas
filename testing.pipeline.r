@@ -9,7 +9,7 @@ standard.split <- function( df, frac, seed=-1 )
 }
 
 
-XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
+BaseWorkflow <- setRefClass('BaseWorkflow',
     fields = c('train.df','test.df', 'model' ,'params', 'cutoff', 'score', 'train.seed'),
     
     methods=list(
@@ -26,39 +26,83 @@ XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
             
             score <<- -1
             
-            log.debug('initializing xgb workflow')
+            log.debug('initializing workflow')
             splitted.data <- split.func( full.df )
             train.df <<- DfHolder$new(splitted.data$train)
             test.df <<- DfHolder$new(splitted.data$test)
         },
-        train=function()
-        {
-            set.seed( train.seed )
-            
-            log.debug('training XGB...')
-            tic('train XGB complete')
-            model <<- xgb.train( 
-                data= train.df$as.xgb.train(),
-                objective= "binary:logistic",
-                tree_method= "hist",
-                max_bin= 31,
-                base_score=train.df$mean,
-                
-                eta              = params$eta,
-                nrounds          = params$nrounds, 
-                colsample_bytree = params$colsample_bytree
-            )
-            toc()
-        },
         calc_score=function()
         {
-            predictions <- model %>% predict( test.df$as.xgb.predict())
+            predictions <- model %>% predict( .self$test.df.as.predict() )
             score <<- globalenv()$score.prediction(predictions, test.df$as.results(), cutoff )
             return(score)
         }
     )
 )
 
+
+XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
+   contains="BaseWorkflow",
+   methods=list(
+       train=function()
+       {
+           set.seed( train.seed )
+           
+           log.debug('training XGB...')
+           tic('train XGB complete')
+           model <<- xgb.train( 
+               data= train.df$as.xgb.train(),
+               objective= "binary:logistic",
+               tree_method= "hist",
+               max_bin= 31,
+               base_score=train.df$mean,
+               
+               eta              = params$eta,
+               nrounds          = params$nrounds, 
+               colsample_bytree = params$colsample_bytree
+           )
+           toc()
+       },
+       test.df.as.predict=function()
+       {
+           return( test.df$as.xgb.predict() )
+       }
+   )
+)
+    
+LgbWorkflow <- setRefClass('LgbWorkflow',
+   contains="BaseWorkflow",
+   methods=list(
+       train=function()
+       {
+           set.seed( train.seed )
+           
+           log.debug('training LGBM...')
+           tic('train LGBM complete')
+           model <<- lgb.train( 
+               data = train.df$as.lgb.train(),
+               objective = "binary",
+               seed= train.seed,
+               boost_from_average=TRUE,
+               bagging_fraction=1,
+               nrounds          = .self$params$nrounds,
+               feature_fraction = .self$params$feature_fraction,
+               learning_rate    = .self$params$learning_rate,
+               max_depth=6,
+               max_bin=255,
+               num_leaves=1024,
+               verbose = -1,
+               eval_freq=0,
+               min_data_in_leaf = 5
+           )
+           toc()
+       },
+       test.df.as.predict=function()
+       {
+           return( test.df$as.lgb.predict() )
+       }
+   )
+)                           
 
 
 BaseCvWorkflow <- setRefClass('BaseCvWorkflow',

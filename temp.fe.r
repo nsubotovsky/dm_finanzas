@@ -20,11 +20,25 @@ load.modules(start.modules)
 
 ### Type test code in here.
 
-full.calc <- function( seed, full.df )
+def.params <- list(eta=0.04, colsample_bytree=0.6, nrounds=300)
+
+
+
+xg.params_200 <- list(eta=0.025, colsample_bytree=0.29, nrounds=200)
+xg.params_300 <- list(eta=0.025, colsample_bytree=0.29, nrounds=300)
+xg.params_400 <- list(eta=0.025, colsample_bytree=0.29, nrounds=400)
+
+lg.params_200 <- list(learning_rate=0.015, feature_fraction=0.33, max_depth=7, nrounds=200)
+lg.params_300 <- list(learning_rate=0.015, feature_fraction=0.33, max_depth=7, nrounds=300)
+lg.params_400 <- list(learning_rate=0.015, feature_fraction=0.33, max_depth=7, nrounds=400)
+
+
+
+full.calc <- function( seed, full.df, params )
 {
     xgbWokflow <- XgBoostWorkflow$new( full.df=full.df,
                                        split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
-                                       params=list(eta=0.04, colsample_bytree=0.6, nrounds=300),
+                                       params=params,
                                        train.seed=seed
     )
     xgbWokflow$train()
@@ -34,21 +48,43 @@ full.calc <- function( seed, full.df )
 
 
 
+
+full.calc.lg <- function( seed, full.df, params )
+{
+    xgbWokflow <- LgbWorkflow$new( full.df=full.df,
+                                       split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
+                                       params=params,
+                                       train.seed=seed
+    )
+    xgbWokflow$train()
+    
+    return( xgbWokflow$calc_score() )
+}
+
+
 df.fe.non <- get.train.df()
 df.fe.std <- df.fe.non %>% enrich.fe.std()
-df.fe.ext <- df.fe.std %>% enrich.fe.extended()
-
 
 
 aa <- globalenv()$get.seeds( 20 )
-aa <- aa %>% mutate( score.base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non) ) )
-aa <- aa %>% mutate( score.fe.std=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std) ) )
-aa <- aa %>% mutate( score.fe.ext=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.ext) ) )
+
+aa <- aa %>% mutate( base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non, params=def.params) ) )
+
+aa <- aa %>% mutate( score.xg.200=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_200) ) )
+aa <- aa %>% mutate( score.xg.300=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_300) ) )
+aa <- aa %>% mutate( score.xg.400=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_400) ) )
+
+
+
+aa <- aa %>% mutate( score.lg.200=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_200) ) )
+aa <- aa %>% mutate( score.lg.300=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_300) ) )
+aa <- aa %>% mutate( score.lg.400=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_400) ) )
+
+
+
 aa <- aa %>% unnest()
 
 
-b <- aa %>% mutate( score.fe.std=map2( score.base, score.fe.std, function( a,b ) b/a*100 ) )
-b <- b %>% mutate( score.fe.ext=map2( score.base, score.fe.ext, function( a,b ) b/a*100 ) )
-b <- b %>% as.data.table( b %>% lapply(unlist) )
-b <- b %>% unnest()
 
+bb <- aa %>% mutate_at( .vars=vars(matches('score')),
+                  .funs=list(~ ./base*100 )  )
