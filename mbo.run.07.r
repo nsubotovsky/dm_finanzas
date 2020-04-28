@@ -17,7 +17,7 @@ load.modules <- function( modulesPath )
 ## load helper libs ##
 load.modules(start.modules)
 
-df <- (get.train.df() %>% split.train.test.df())$train
+df <- (get.train.df() %>% split.train.test.df())$train %>% enrich.fe.std()
 
 
 a <- LgbMboOptmizer$new(dataframe=df,
