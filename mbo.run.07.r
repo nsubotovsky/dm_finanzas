@@ -35,3 +35,11 @@ a <- LgbMboOptmizer$new(dataframe=df,
 a$go()
 
 a$print.mbo(55)
+
+#
+#  ## Results so far ##
+#
+# learning_rate = 0.01547675
+# max_depth = 7
+# feature_fraction = 0.33
+#
