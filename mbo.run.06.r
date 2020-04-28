@@ -17,11 +17,11 @@ load.modules <- function( modulesPath )
 ## load helper libs ##
 load.modules(start.modules)
 
-df <- (get.train.df() %>% split.train.test.df())$train
+df <- (get.train.df() %>% split.train.test.df())$train %>% enrich.fe.std()
 
 
 a <- XgbMboOptmizer$new(dataframe=df,
-                        output.folder='mbo_test_06',
+                        output.folder='mbo_test_06_enrich',
                         parameters.set=makeParamSet(
                             makeNumericParam('eta', lower=.001, upper=.1),
                             makeNumericParam('colsample_bytree', lower=.05, upper=1)
