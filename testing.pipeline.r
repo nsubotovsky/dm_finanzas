@@ -140,7 +140,7 @@ LgbmCvWorkflow <- setRefClass('LgbmCvWorkflow',
              globalenv()$log.debug('running CV...')
              tic('CV Run complete')
              cv.result <<- lgb.cv(
-                 data = df.train$as.lgb.train(),
+                 data = train.df$as.lgb.train(),
                  nfold=5L,
                  objective = "binary",
                  metric="suboMetrics",
@@ -155,8 +155,8 @@ LgbmCvWorkflow <- setRefClass('LgbmCvWorkflow',
                  max_depth=6,
                  max_bin=255,
                  num_leaves=1024,
-                 verbose = 5,
-                 eval_freq=5,
+                 verbose = -1,
+                 eval_freq=0,
                  min_data_in_leaf = 5,
                  eval=.self$test.func
              )
@@ -171,7 +171,7 @@ LgbmCvWorkflow <- setRefClass('LgbmCvWorkflow',
 
 
 
-XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
+BaseOptmizer <- setRefClass('BaseOptmizer',
      fields = c( 'dataframe', 'output.file', 'iterations.per.point', 'total.points', 'parameters.set', 'ouput.run', 'nrounds'),
      
      methods=list(
@@ -187,7 +187,7 @@ XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
          go=function()
          {
              obj.fun <- makeSingleObjectiveFunction(
-                 name='xgb_hiperparams',
+                 name='mbo_hiperparams',
                  fn=.self$func.wrapper,
                  par.set=.self$parameters.set,
                  has.simple.signature = FALSE,
@@ -220,33 +220,64 @@ XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
              seeds <- get.seeds(.self$iterations.per.point)
              seeds <- seeds %>% mutate(params=rep(list(x),.self$iterations.per.point))
              seeds.with.results <- seeds %>% mutate( result=map2( params, seed, .self$autoTestAndScore))
-
              return( seeds.with.results$result %>% unlist() %>% mean() )
-         },
-         autoTestAndScore=function( x, seed=NA )
-         {
-             cvparams <- x
-             cvparams$nrounds <- .self$nrounds
-
-             cv <- XgBoostCvWorkflow$new(params=cvparams, train.df=.self$dataframe)
-             return( cv$go(seed) )
          },
          get.mbo.fromfile=function()
          {
              mbo.data <- get(load(output.file))
              return(mbo.data$opt.path$env$path)
-         },
-         print.mbo=function(limit)
-         {
-             print(
-                 ggplot(.self$get.mbo.fromfile() %>%filter(y > limit),
-                     aes(x = eta, y = colsample_bytree, color=y) ) +
-                     geom_point() +
-                     xlim(0,.1) +
-                     ylim(0,1) +
-                     scale_color_gradient(low="blue", high="red"))
          }
      )
 )
 
 
+
+XgbMboOptmizer <- setRefClass('XgbMboOptmizer',
+          contains="BaseOptmizer",
+          methods=list(
+              autoTestAndScore=function( x, seed=NA )
+              {
+                  cvparams <- x
+                  cvparams$nrounds <- .self$nrounds
+                  
+                  cv <- XgBoostCvWorkflow$new(params=cvparams, train.df=.self$dataframe)
+                  return( cv$go(seed)$cv.score )
+              },
+              print.mbo=function(limit)
+              {
+                  print(
+                      ggplot(.self$get.mbo.fromfile() %>%filter(y > limit),
+                             aes(x = eta, y = colsample_bytree, color=y) ) +
+                          geom_point() +
+                          xlim(0,.1) +
+                          ylim(0,1) +
+                          scale_color_gradient(low="blue", high="red"))
+              }
+          )
+)
+
+
+
+LgbMboOptmizer <- setRefClass('LgbMboOptmizer',
+          contains="BaseOptmizer",
+          methods=list(
+              autoTestAndScore=function( x, seed=NA )
+              {
+                  cvparams <- x
+                  cvparams$nrounds <- .self$nrounds
+                  
+                  cv <- LgbmCvWorkflow$new(params=cvparams, train.df=.self$dataframe)
+                  return( cv$go(seed)$cv.score )
+              },
+              print.mbo=function(limit)
+              {
+                  print(
+                      ggplot(.self$get.mbo.fromfile() %>%filter(y > limit),
+                             aes(x = learning_rate, y = feature_fraction, color=y) ) +
+                          geom_point() +
+                          xlim(0,.1) +
+                          ylim(0,1) +
+                          scale_color_gradient(low="blue", high="red"))
+              }
+          )
+)
