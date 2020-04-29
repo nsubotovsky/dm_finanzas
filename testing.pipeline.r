@@ -31,9 +31,13 @@ BaseWorkflow <- setRefClass('BaseWorkflow',
             train.df <<- DfHolder$new(splitted.data$train)
             test.df <<- DfHolder$new(splitted.data$test)
         },
+        get.prediction.probs=function()
+        {
+            return( model %>% predict( .self$test.df.as.predict() ) )
+        },
         calc_score=function()
         {
-            predictions <- model %>% predict( .self$test.df.as.predict() )
+            predictions <- .self$get.prediction.probs()
             score <<- globalenv()$score.prediction(predictions, test.df$as.results(), cutoff )
             return(score)
         }
