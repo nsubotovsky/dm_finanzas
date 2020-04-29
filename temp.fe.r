@@ -47,8 +47,6 @@ full.calc <- function( seed, full.df, params )
 }
 
 
-
-
 full.calc.lg <- function( seed, full.df, params )
 {
     xgbWokflow <- LgbWorkflow$new( full.df=full.df,
@@ -62,23 +60,54 @@ full.calc.lg <- function( seed, full.df, params )
 }
 
 
+
+calc.combined <- function( seed, full.df )
+{
+    lgb <- LgbWorkflow$new( full.df=full.df,
+                                   split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
+                                   params=lg.params_400,
+                                   train.seed=seed
+    )
+    lgb$train()
+    
+    xgb <- XgBoostWorkflow$new( full.df=full.df,
+                                       split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
+                                       params=xg.params_400,
+                                       train.seed=seed
+    )
+    xgb$train()
+    
+    combined <- data.table(
+        xgb=xgb$get.prediction.probs(),
+        lgb=lgb$get.prediction.probs()
+    ) %>% mutate( avg=rowMeans(.) )
+    
+    globalenv()$score.prediction(combined$avg, lgb$test.df$as.results(), 0.025 )
+    
+}
+
+
+
 df.fe.non <- get.train.df()
 df.fe.std <- df.fe.non %>% enrich.fe.std()
 
 
-aa <- globalenv()$get.seeds( 20 )
+aa <- globalenv()$get.seeds( 5 )
 
 aa <- aa %>% mutate( base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non, params=def.params) ) )
 
-aa <- aa %>% mutate( score.xg.200=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_200) ) )
-aa <- aa %>% mutate( score.xg.300=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_300) ) )
+#aa <- aa %>% mutate( score.xg.200=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_200) ) )
+#aa <- aa %>% mutate( score.xg.300=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_300) ) )
 aa <- aa %>% mutate( score.xg.400=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_400) ) )
 
 
 
-aa <- aa %>% mutate( score.lg.200=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_200) ) )
-aa <- aa %>% mutate( score.lg.300=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_300) ) )
+#aa <- aa %>% mutate( score.lg.200=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_200) ) )
+#aa <- aa %>% mutate( score.lg.300=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_300) ) )
 aa <- aa %>% mutate( score.lg.400=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_400) ) )
+
+
+aa <- aa %>% mutate( score.combined=map( seed, function(seed) calc.combined(seed=seed, full.df=df.fe.std) ) )
 
 
 
