@@ -76,11 +76,12 @@ calc.combined <- function( seed, full.df )
                                        train.seed=seed
     )
     xgb$train()
-    
+
     combined <- data.table(
         xgb=xgb$get.prediction.probs(),
         lgb=lgb$get.prediction.probs()
-    ) %>% mutate( avg=rowMeans(.) )
+    ) %>% mutate( avg=map2_dbl( xgb, lgb, function(xgb,lgb) (xgb*0.7+lgb*0.3) ) )
+    
     
     globalenv()$score.prediction(combined$avg, lgb$test.df$as.results(), 0.025 )
     
