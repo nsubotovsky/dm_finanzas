@@ -27,13 +27,26 @@ BaseWorkflow <- setRefClass('BaseWorkflow',
             score <<- -1
             
             log.debug('initializing workflow')
-            splitted.data <- split.func( full.df )
-            train.df <<- DfHolder$new(splitted.data$train)
-            test.df <<- DfHolder$new(splitted.data$test)
+            
+            if (is.na( split.func ))
+            {
+                log.debug('No split function provided. Will train with full df')
+                train.df <<- DfHolder$new(full.df)
+            } else {
+                log.debug('splitting with provided function')
+                splitted.data <- split.func( full.df )
+                train.df <<- DfHolder$new(splitted.data$train)
+                test.df <<- DfHolder$new(splitted.data$test)
+            }
         },
-        get.prediction.probs=function()
+        get.prediction.probs=function( predict.df=NA )
         {
-            return( model %>% predict( .self$test.df.as.predict() ) )
+            if (is.na(predict.df)){
+                return( model %>% predict( .self$test.df.as.predict() ) )
+            } else {
+                log.debug('predicting with procided DF')
+                return( model %>% predict( .self$test.df.as.predict( predict.df ) ) )
+            }
         },
         calc_score=function()
         {
@@ -67,9 +80,14 @@ XgBoostWorkflow <- setRefClass('XgBoostWorkflow',
            )
            toc()
        },
-       test.df.as.predict=function()
+       test.df.as.predict=function(df=NA)
        {
-           return( test.df$as.xgb.predict() )
+           if (is.na(df)){
+               return( test.df$as.xgb.predict() )
+           } else{
+               return( DfHolder$new(df)$as.xgb.predict() )
+           }
+           
        }
    )
 )
@@ -101,9 +119,14 @@ LgbWorkflow <- setRefClass('LgbWorkflow',
            )
            toc()
        },
-       test.df.as.predict=function()
+       test.df.as.predict=function(df=NA)
        {
-           return( test.df$as.lgb.predict() )
+           if (is.na(df)){
+               return( test.df$as.xgb.predict() )
+           } else{
+               return( DfHolder$new(df)$as.lgb.predict() )
+           }
+           
        }
    )
 )                           

@@ -18,95 +18,67 @@ load.modules <- function( modulesPath )
 ## load helper libs ##
 load.modules(start.modules)
 
-### Type test code in here.
-
-def.params <- list(eta=0.04, colsample_bytree=0.6, nrounds=300)
 
 
 
-xg.params_400 <- list(eta=0.025, colsample_bytree=0.29, nrounds=400)
-
-lg.params_400 <- list(learning_rate=0.015, feature_fraction=0.33, max_depth=7, nrounds=400)
-
-
-
-full.calc <- function( seed, full.df, params )
+calc.xgb <- function( seed, train.df )
 {
-    xgbWokflow <- XgBoostWorkflow$new( full.df=full.df,
-                                       split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
-                                       params=params,
+    xgbWokflow <- XgBoostWorkflow$new( full.df=train.df,
+                                       split.func=NA,
+                                       params=list(eta=0.025, colsample_bytree=0.29, nrounds=400),
                                        train.seed=seed
     )
     xgbWokflow$train()
     
-    return( xgbWokflow$calc_score() )
+    return( xgbWokflow )
 }
 
 
-full.calc.lg <- function( seed, full.df, params )
+calc.lgb <- function( seed, train.df )
 {
-    xgbWokflow <- LgbWorkflow$new( full.df=full.df,
-                                   split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
-                                   params=params,
+    lgbWokflow <- LgbWorkflow$new( full.df=train.df,
+                                   split.func=NA,
+                                   params=list(learning_rate=0.015, feature_fraction=0.33, max_depth=7, nrounds=400),
                                    train.seed=seed
     )
-    xgbWokflow$train()
+    lgbWokflow$train()
     
-    return( xgbWokflow$calc_score() )
+    return( lgbWokflow )
 }
 
 
 
-calc.combined <- function( seed, full.df )
+calc.combined <- function( seed, train.df, predict.df, cutoff=0.025 )
 {
-    lgb <- LgbWorkflow$new( full.df=full.df,
-                            split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
-                            params=lg.params_400,
-                            train.seed=seed
-    )
-    lgb$train()
+    train.df.fe <- train.df %>% enrich.fe.std()
     
-    xgb <- XgBoostWorkflow$new( full.df=full.df,
-                                split.func=partial( globalenv()$standard.split, frac=0.7, seed=seed ),
-                                params=xg.params_400,
-                                train.seed=seed
-    )
-    xgb$train()
-    
+    lgb <- calc.lgb( seed, train.df.fe )
+    xgb <- calc.xgb( seed, train.df.fe )
+
+    predict.df.fe <- predict.df %>% enrich.fe.std()
+
     combined <- data.table(
-        xgb=xgb$get.prediction.probs(), ## 80
-        lgb=lgb$get.prediction.probs()  ## 54
-    ) %>% mutate( avg=map2_dbl( xgb, lgb, function(xgb,lgb) (xgb*80+lgb*54)/(80+54) ) )
+        xgb=xgb$get.prediction.probs( predict.df.fe ),
+        lgb=lgb$get.prediction.probs( predict.df.fe )
+    ) %>% mutate( avg=map2_dbl( xgb, lgb, function(xgb,lgb) (xgb*0.7+lgb*0.3) ) )
     
-    globalenv()$score.prediction(combined$avg, lgb$test.df$as.results(), 0.025 )
-    
+
+    predictions <- data.table( id_cliente=predict.df.fe$id_cliente, prob=combined$avg ) %>%
+        filter( prob>cutoff ) %>%
+        arrange(-prob)
+
+    return(predictions$id_cliente)
 }
 
 
+seed <- 123457
 
-df.fe.non <- get.train.df()
-df.fe.std <- df.fe.non %>% enrich.fe.std()
-
-
-aa <- globalenv()$get.seeds( 100 )
-
-aa <- aa %>% mutate( score.combined=map( seed, function(seed) calc.combined(seed=seed, full.df=df.fe.std) ) )
+ids <- calc.combined( seed=seed,
+               train.df=get.train.df(),
+               predict.df=get.predict.df())
 
 
-aa <- aa %>% mutate( base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non, params=def.params) ) )
-
-aa <- aa %>% mutate( score.xg.400=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_400) ) )
-
-aa <- aa %>% mutate( score.lg.400=map( seed, function(seed) full.calc.lg(seed=seed, full.df=df.fe.std, params=lg.params_400) ) )
-
-
-
-
-
-
-aa <- aa %>% unnest()
-
-
-
-bb <- aa %>% mutate_at( .vars=vars(matches('score')),
-                        .funs=list(~ ./base*100 )  )
+fwrite( ids, 
+        file= get.data.dir('candidate_02', 'subotovsky_entregar.txt', auto.create=T), 
+        sep= "\t", 
+        eol= "\r\n")
