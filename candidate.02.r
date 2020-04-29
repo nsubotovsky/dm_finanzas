@@ -78,7 +78,7 @@ ids <- calc.combined( seed=seed,
                predict.df=get.predict.df())
 
 
-fwrite( ids, 
+fwrite( list(ids),
         file= get.data.dir('candidate_02', 'subotovsky_entregar.txt', auto.create=T), 
         sep= "\t", 
         eol= "\r\n")
