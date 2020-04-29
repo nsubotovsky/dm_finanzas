@@ -368,10 +368,30 @@ enrich.fe.std <- function( dataset.original )
     dataset[ , mvr_mpagosdolares       := mv_mpagosdolares / mv_mlimitecompra ]
     dataset[ , mvr_mconsumototal       := mv_mconsumototal  / mv_mlimitecompra ]
     dataset[ , mvr_mpagominimo         := mv_mpagominimo  / mv_mlimitecompra ]
-    
+
     return( dataset )
 }
 
+
+
+enrich.fe.small.extended <- function( dataset.original )
+{
+    dataset <- data.table(dataset.original)
+    
+    dataset[ , mv_mconsumo:= rowSums( cbind( mtarjeta_master_consumo, mtarjeta_visa_consumo) , na.rm=TRUE ) ]
+    dataset[ , mv_mdescuentos := rowSums( cbind(mcajeros_propios_descuentos, mtarjeta_visa_descuentos, mtarjeta_master_descuentos, mcuenta_descuentos) , na.rm=TRUE ) ]
+    dataset[ , mv_mcomisiones := rowSums( cbind(mcomisiones_mantenimiento, mcomisiones_otras) , na.rm=TRUE ) ]
+    dataset[ , mvr_Master_mconsumo:= mtarjeta_master_consumo / mv_mconsumo ]
+    dataset[ , mvr_Visa_mconsumo:= mtarjeta_visa_consumo / mv_mconsumo ]
+    dataset[ , mvr_Cajeros_mdescuentos:= mcajeros_propios_descuentos / mv_mdescuentos ]
+    dataset[ , mvr_Visa_mdescuentos:= mtarjeta_visa_descuentos / mv_mdescuentos ]
+    dataset[ , mvr_Master_mdescuentos:= mtarjeta_master_descuentos / mv_mdescuentos ]
+    dataset[ , mvr_Cuenta_mdescuentos:= mcuenta_descuentos / mv_mdescuentos ]
+    dataset[ , mvr_mcomisiones_mante:= mcomisiones_mantenimiento / mv_mcomisiones ]
+    dataset[ , mvr_mcomisiones_otras:= mcomisiones_otras / mv_mcomisiones ]
+    
+    return( dataset )
+}
 
 enrich.fe.extended <- function( dataset.original )
 {
