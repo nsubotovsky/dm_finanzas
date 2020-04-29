@@ -122,7 +122,7 @@ LgbWorkflow <- setRefClass('LgbWorkflow',
        test.df.as.predict=function(df=NA)
        {
            if (is.na(df)){
-               return( test.df$as.xgb.predict() )
+               return( test.df$as.lgb.predict() )
            } else{
                return( DfHolder$new(df)$as.lgb.predict() )
            }

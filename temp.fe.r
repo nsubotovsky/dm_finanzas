@@ -95,6 +95,7 @@ df.fe.std <- df.fe.non %>% enrich.fe.std()
 
 aa <- globalenv()$get.seeds( 5 )
 
+
 aa <- aa %>% mutate( base=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.non, params=def.params) ) )
 
 #aa <- aa %>% mutate( score.xg.200=map( seed, function(seed) full.calc(seed=seed, full.df=df.fe.std, params=xg.params_200) ) )
@@ -109,6 +110,7 @@ aa <- aa %>% mutate( score.lg.400=map( seed, function(seed) full.calc.lg(seed=se
 
 
 aa <- aa %>% mutate( score.combined=map( seed, function(seed) calc.combined(seed=seed, full.df=df.fe.std) ) )
+
 
 
 
