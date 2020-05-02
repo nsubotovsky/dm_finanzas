@@ -220,6 +220,18 @@ get.predict.df <- function()
     return( fst.read(dfpath) )
 }
 
+get.predict.results <- function()
+{
+  dfpath <- get.data.dir('recuperatorio', 'subotovsky_realidad.rds')
+  return( fst.read(dfpath) )
+}
+
+get.predict.full.df <- function()
+{
+  dfpath <- get.data.dir('recuperatorio', 'subotovsky_aplicacion_full.rds')
+  return( fst.read(dfpath) )
+}
+
 
 ############ (sub)Sampling ###########################
 
